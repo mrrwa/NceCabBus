@@ -183,7 +183,7 @@ void NceCabBus::send2BytesResponse(uint8_t byte0, uint8_t byte1)
 
 void NceCabBus::setAuiIoState(uint16_t state)
 {
-	aiuState = state;
+	aiuState = state & ((1 << AIU_NUM_IOS) - 1);
 }
  
 uint16_t NceCabBus::getAuiIoState(void)
