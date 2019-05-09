@@ -12,6 +12,8 @@
 
 // command codes
 #define CMD_PR_1ST_LEFT  0xC0     // print next 8 chars 1ST line left  (addr 0x80)
+
+#define FAST_CLOCK_BCAST 0xC1     // 
 #define CMD_PR_1ST_RIGHT 0xC1     // print next 8 chars 1ST line right (addr 0x88)
 #define CMD_PR_2ND_LEFT  0xC2     // print next 8 chars 2ND line left  (addr 0xC0)
 #define CMD_PR_2ND_RIGHT 0xC3     // print next 8 chars 2ND line right (addr 0xC8)
@@ -36,6 +38,7 @@
 #define CMD_CAB_TYPE     0xD2     // 
 #define CMD_CAB_SETUP    0xD3     // 
 
+#define FAST_CLOCK_RATE_BCAST 0xD4     // 
 #define CMD_LIGHT_HOME_GREEN  0xD4     // 
 #define CMD_LIGHT_HOME_YELLOW 0xD5     // 
 #define CMD_LIGHT_HOME_RED    0xD6     // 

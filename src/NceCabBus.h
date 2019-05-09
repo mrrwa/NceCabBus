@@ -27,6 +27,7 @@
 #include "WProgram.h"
 #endif
 
+#include "Print.h"
 #include "keycodes.h"
 
 #define AIU_NUM_IOS 14
@@ -48,20 +49,28 @@ typedef enum
 typedef enum
 {
   CAB_STATE_UNKNOWN = 0,
-  CAB_STATE_PING_BROADCAST, // Ping Broadcast
-  CAB_STATE_PING_OTHER,		// Pinging other nodes
-  CAB_STATE_PING_NODE,		// Ping This Node
-  CAB_STATE_EXEC_CMD,		// Handle Node Commands 
+  CAB_STATE_PING_OTHER,			// Pinging other nodes
+  CAB_STATE_EXEC_MY_CMD,		// Handle Node Commands 
+  CAB_STATE_EXEC_BROADCAST_CMD, // Ping Broadcast
 } CAB_STATE;
+
+typedef enum
+{
+	FAST_CLOCK_24 = ' ',
+	FAST_CLOCK_AM = 'A',
+	FAST_CLOCK_PM = 'P'
+} FAST_CLOCK_12_24_MODE;
 
 typedef void (*RS485SendByte)(uint8_t value);
 typedef void (*RS485SendBytes)(uint8_t *values, uint8_t length);
+typedef void (*FastClockHandler)(uint8_t Hours, uint8_t Minutes, uint8_t Rate, FAST_CLOCK_12_24_MODE Mode);
 
 class NceCabBus
 {
   public:
     NceCabBus();
-    
+
+	void setLogger(Print *pLogger);        
     CAB_TYPE getCabType(void);    
     void setCabType(CAB_TYPE newtype);    
 
@@ -72,6 +81,8 @@ class NceCabBus
     
     void setRS485SendByteHandler(RS485SendByte funcPtr);
     void setRS485SendBytesHandler(RS485SendBytes funcPtr);
+
+    void setFastClockHandler(FastClockHandler funcPtr);
     
     void setAuiIoState(uint16_t state); 
     uint16_t getAuiIoState(void);
@@ -87,6 +98,11 @@ class NceCabBus
   	
   	uint16_t	aiuState;
   	
+  	uint8_t					FastClockHours;
+  	uint8_t					FastClockMinutes;
+  	uint8_t					FastClockRate; // As a Ratio of n:1
+  	FAST_CLOCK_12_24_MODE	FastClock1224;
+  	
   	uint8_t		cmdBufferIndex;
   	uint8_t		cmdBufferExpectedLength;
   	uint8_t		cmdBuffer[CMD_LEN_MAX];
@@ -96,6 +112,8 @@ class NceCabBus
   	
   	RS485SendByte	func_RS485SendByte;
   	RS485SendBytes	func_RS485SendBytes;
+  	FastClockHandler func_FastClockHandler;
   	
-  	uint8_t getCmdLen(uint8_t cmd);
+  	uint8_t getCmdDataLen(uint8_t cmd, uint8_t Broadcast);
+  	Print *pLogger;
 };
