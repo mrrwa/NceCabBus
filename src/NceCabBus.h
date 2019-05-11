@@ -56,14 +56,15 @@ typedef enum
 
 typedef enum
 {
+	FAST_CLOCK_NOT_SET = 0,
 	FAST_CLOCK_24 = ' ',
 	FAST_CLOCK_AM = 'A',
 	FAST_CLOCK_PM = 'P'
-} FAST_CLOCK_12_24_MODE;
+} FAST_CLOCK_MODE;
 
 typedef void (*RS485SendByte)(uint8_t value);
 typedef void (*RS485SendBytes)(uint8_t *values, uint8_t length);
-typedef void (*FastClockHandler)(uint8_t Hours, uint8_t Minutes, uint8_t Rate, FAST_CLOCK_12_24_MODE Mode);
+typedef void (*FastClockHandler)(uint8_t Hours, uint8_t Minutes, uint8_t Rate, FAST_CLOCK_MODE Mode);
 
 class NceCabBus
 {
@@ -98,10 +99,10 @@ class NceCabBus
   	
   	uint16_t	aiuState;
   	
-  	uint8_t					FastClockHours;
-  	uint8_t					FastClockMinutes;
-  	uint8_t					FastClockRate; // As a Ratio of n:1
-  	FAST_CLOCK_12_24_MODE	FastClock1224;
+  	uint8_t			FastClockHours;
+  	uint8_t			FastClockMinutes;
+  	uint8_t			FastClockRate; // As a Ratio of n:1
+  	FAST_CLOCK_MODE	FastClockMode;
   	
   	uint8_t		cmdBufferIndex;
   	uint8_t		cmdBufferExpectedLength;

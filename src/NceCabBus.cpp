@@ -79,6 +79,8 @@ NceCabBus::NceCabBus()
 	polled = 0;
 	cabType = CAB_TYPE_UNKNOWN;
 	cabState = CAB_STATE_UNKNOWN;
+	FastClockRate = 0;
+	FastClockMode = FAST_CLOCK_NOT_SET;
 };
 
 void NceCabBus::setLogger(Print *pLogger)
@@ -172,16 +174,19 @@ void NceCabBus::processByte(uint8_t inByte)
 
 		if(cmdBufferIndex == cmdBufferExpectedLength)
 		{
-// 			pLogger->print("Cmd: ");
-// 			for(uint8_t i = 0; i < cmdBufferExpectedLength; i++)
+// 			if(pLogger)
 // 			{
-// 				if(cmdBuffer[i] < 16)
-// 					pLogger->print('0');
-// 				pLogger->print(cmdBuffer[i], HEX);
-// 				pLogger->print('-');
-// 				char asciiValue = (char)(cmdBuffer[i] & CMD_ASCII_MASK);
-// 				pLogger->print(asciiValue);
-// 				pLogger->print(' ');
+// 				pLogger->print("Cmd: ");
+// 				for(uint8_t i = 0; i < cmdBufferExpectedLength; i++)
+// 				{
+// 					if(cmdBuffer[i] < 16)
+// 						pLogger->print('0');
+// 					pLogger->print(cmdBuffer[i], HEX);
+// 					pLogger->print('-');
+// 					char asciiValue = (char)(cmdBuffer[i] & CMD_ASCII_MASK);
+// 					pLogger->print(asciiValue);
+// 					pLogger->print(' ');
+// 				}
 // 			}
 
 			if(cabState == CAB_STATE_EXEC_MY_CMD)
@@ -202,22 +207,22 @@ void NceCabBus::processByte(uint8_t inByte)
 						FastClockHours    = ((cmdBuffer[2] - '0') * 10) + (cmdBuffer[3] - '0');  
 						FastClockMinutes  = ((cmdBuffer[5] - '0') * 10) + (cmdBuffer[6] - '0');
 						if(cmdBuffer[7] == 'A')
-							FastClock1224 = FAST_CLOCK_AM;
+							FastClockMode = FAST_CLOCK_AM;
 						else if(cmdBuffer[7] == 'P')
-							FastClock1224 = FAST_CLOCK_PM;
+							FastClockMode = FAST_CLOCK_PM;
 						else
-							FastClock1224 = FAST_CLOCK_24;
+							FastClockMode = FAST_CLOCK_24;
 					
-						if(func_FastClockHandler)
-							func_FastClockHandler(FastClockHours, FastClockMinutes, FastClockRate, FastClock1224);
+						if(func_FastClockHandler && (FastClockMode > FAST_CLOCK_NOT_SET) && (FastClockRate > 0))
+							func_FastClockHandler(FastClockHours, FastClockMinutes, FastClockRate, FastClockMode);
 						break;
 
 					case FAST_CLOCK_RATE_BCAST:	// Broadcast Fast Clock Rate
 						if(FastClockRate != cmdBuffer[1])
 						{
 							FastClockRate = cmdBuffer[1];
-							if(func_FastClockHandler)
-								func_FastClockHandler(FastClockHours, FastClockMinutes, FastClockRate, FastClock1224);
+							if(func_FastClockHandler && (FastClockMode > FAST_CLOCK_NOT_SET) && (FastClockRate > 0))
+								func_FastClockHandler(FastClockHours, FastClockMinutes, FastClockRate, FastClockMode);
 						}
 						break;
 				}
