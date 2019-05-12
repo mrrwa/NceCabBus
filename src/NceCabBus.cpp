@@ -76,9 +76,13 @@ NceCabBus::NceCabBus()
 {
 	aiuState = 0;
 	cabAddress = 0;
-	polled = 0;
+	
+	speedKnob = 127; 	// 127 = knob not used
+	keyCode = BTN_REP_LAST_LCD;
+	
 	cabType = CAB_TYPE_UNKNOWN;
 	cabState = CAB_STATE_UNKNOWN;
+	
 	FastClockRate = 0;
 	FastClockMode = FAST_CLOCK_NOT_SET;
 };
@@ -103,6 +107,21 @@ void NceCabBus::setFastClockHandler(FastClockHandler funcPtr)
 	func_FastClockHandler = funcPtr;
 }
 
+void NceCabBus::setLCDUpdateHandler(LCDUpdateHandler funcPtr)
+{
+	func_LCDUpdateHandler = funcPtr;
+}
+
+void NceCabBus::setLCDMoveCursorHandler(LCDMoveCursorHandler funcPtr)
+{
+	func_LCDMoveCursorHandler = funcPtr;
+}
+
+void NceCabBus::setLCDPrintCharHandler(LCDPrintCharHandler funcPtr)
+{
+	func_LCDPrintCharHandler = funcPtr;
+}
+
 CAB_TYPE NceCabBus::getCabType(void)
 {
 	return cabType;
@@ -121,6 +140,27 @@ uint8_t NceCabBus::getCabAddress(void)
 void NceCabBus::setCabAddress(uint8_t addr)
 {
 	cabAddress = addr;
+}
+
+void NceCabBus::setSpeedKnob(uint8_t speed)
+{
+	if(speed <= 127)
+		speedKnob = speed;
+}
+
+uint8_t NceCabBus::getSpeedKnob(void)
+{
+	return speedKnob;
+}
+
+void NceCabBus::setKeyPress(uint8_t keyCode)
+{
+	this->keyCode = keyCode;
+}
+
+CAB_STATE NceCabBus::getCabState()
+{
+	return cabState;
 }
 
 void NceCabBus::processByte(uint8_t inByte)
@@ -146,6 +186,8 @@ void NceCabBus::processByte(uint8_t inByte)
 				case CAB_TYPE_LCD:
 				case CAB_TYPE_NO_LCD:
 				case CAB_TYPE_SMART:
+					send2BytesResponse(keyCode, speedKnob);
+					keyCode = BTN_NO_KEY_DN;
 					break;
 		
 				case CAB_TYPE_AIU:
@@ -174,34 +216,70 @@ void NceCabBus::processByte(uint8_t inByte)
 
 		if(cmdBufferIndex == cmdBufferExpectedLength)
 		{
-// 			if(pLogger)
-// 			{
-// 				pLogger->print("Cmd: ");
-// 				for(uint8_t i = 0; i < cmdBufferExpectedLength; i++)
-// 				{
-// 					if(cmdBuffer[i] < 16)
-// 						pLogger->print('0');
-// 					pLogger->print(cmdBuffer[i], HEX);
-// 					pLogger->print('-');
-// 					char asciiValue = (char)(cmdBuffer[i] & CMD_ASCII_MASK);
-// 					pLogger->print(asciiValue);
-// 					pLogger->print(' ');
-// 				}
-// 			}
+			if(pLogger)
+			{
+				pLogger->print("\nCmd: ");
+				for(uint8_t i = 0; i < cmdBufferExpectedLength; i++)
+				{
+					if(cmdBuffer[i] < 16)
+						pLogger->print('0');
+					pLogger->print(cmdBuffer[i], HEX);
+					pLogger->print('-');
+					char asciiValue = (char)(cmdBuffer[i] & CMD_ASCII_MASK);
+					pLogger->print(asciiValue);
+					pLogger->print(' ');
+				}
+			}
 
+			uint8_t Command = cmdBuffer[0];
+			
 			if(cabState == CAB_STATE_EXEC_MY_CMD)
 			{
-				switch(cmdBuffer[0])
+				switch(Command)
 				{
 					case CMD_CAB_TYPE:
 						send1ByteResponse(cabType);
 						break;
+
+					case CMD_PR_1ST_LEFT:
+					case CMD_PR_1ST_RIGHT:
+					case CMD_PR_2ND_LEFT:
+					case CMD_PR_2ND_RIGHT:
+					case CMD_PR_3RD_LEFT:
+					case CMD_PR_3RD_RIGHT:
+					case CMD_PR_4TH_LEFT:
+					case CMD_PR_4TH_RIGHT:
+						if(func_LCDUpdateHandler)
+						{					
+							uint8_t Row = (Command & 0x03 ) >> 1;
+							uint8_t Col = (Command & 0x01) * 8;
+						
+							func_LCDUpdateHandler(Col, Row, (char*) cmdBuffer + 1, 8);
+						}	
+						break;
+						
+					case CMD_MOVE_CURSOR:
+						if(func_LCDMoveCursorHandler)
+						{
+							if(cmdBuffer[1] <= 0x8F)
+								func_LCDMoveCursorHandler(cmdBuffer[1] - 0x80, 0);
+							else if(cmdBuffer[1] <= 0xCF)
+								func_LCDMoveCursorHandler(cmdBuffer[1] - 0xC0, 1); 
+						}
+						break;
+												
+					case CMD_PR_TTY:
+					case CMD_PR_TTY_NEXT:
+						if(func_LCDPrintCharHandler)
+							func_LCDPrintCharHandler((char)(cmdBuffer[1] & CMD_ASCII_MASK), Command == CMD_PR_TTY_NEXT );
+						break;
+												
 				}
 			}
 				
 			else if(cabState == CAB_STATE_EXEC_BROADCAST_CMD)
 			{
-				switch(cmdBuffer[0])
+				switch(Command)
 				{
 					case FAST_CLOCK_BCAST:	// Broadcast Fast Clock Time
 						FastClockHours    = ((cmdBuffer[2] - '0') * 10) + (cmdBuffer[3] - '0');  
@@ -215,8 +293,16 @@ void NceCabBus::processByte(uint8_t inByte)
 					
 						if(func_FastClockHandler && (FastClockMode > FAST_CLOCK_NOT_SET) && (FastClockRate > 0))
 							func_FastClockHandler(FastClockHours, FastClockMinutes, FastClockRate, FastClockMode);
+							
+						if(cabType == CAB_TYPE_LCD && func_LCDUpdateHandler)
+						{					
+							uint8_t yPos = (Command & 0x03 ) >> 1;
+							uint8_t xPos = (Command & 0x01) * 8;
+						
+							func_LCDUpdateHandler(xPos, yPos, (char*) cmdBuffer + 1, 8);
+						}	
 						break;
-
+								
 					case FAST_CLOCK_RATE_BCAST:	// Broadcast Fast Clock Rate
 						if(FastClockRate != cmdBuffer[1])
 						{
