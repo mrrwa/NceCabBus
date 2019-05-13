@@ -10,6 +10,7 @@
 #define ANALOG_AVG_NUM_SAMPLES 5
 #define ANALOG_READ_SAMPLE_MS 20
 
+// Uncomment the line below to enable printing of Debug output to the Serial device
 //#define DEBUG_RS485_BYTES
 
 // Define the KeyPad
@@ -82,7 +83,9 @@ NceCabBus cabBus;
 
 void sendRS485Byte(uint8_t value)
 {
+	// Seem to need a short delay to make sure the RS485 Master has disable Tx and is ready for our response
   delayMicroseconds(200);
+  
   RS485HwSerial1.write(value);
 
 #ifdef DEBUG_RS485_BYTES  
@@ -98,7 +101,9 @@ void sendRS485Byte(uint8_t value)
 
 void sendRS485Bytes(uint8_t *values, uint8_t length)
 {
+	// Seem to need a short delay to make sure the RS485 Master has disable Tx and is ready for our response
   delayMicroseconds(200);
+  
   RS485HwSerial1.write(values, length);
 
 #ifdef DEBUG_RS485_BYTES  
