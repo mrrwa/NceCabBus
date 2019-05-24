@@ -92,11 +92,6 @@ void NceCabBus::setLogger(Print *pLogger)
 	this->pLogger = pLogger;
 }
 
-void NceCabBus::setRS485SendByteHandler(RS485SendByte funcPtr)
-{
-	func_RS485SendByte = funcPtr;
-}
-
 void NceCabBus::setRS485SendBytesHandler(RS485SendBytes funcPtr)
 {
 	func_RS485SendBytes = funcPtr;
@@ -115,6 +110,11 @@ void NceCabBus::setLCDUpdateHandler(LCDUpdateHandler funcPtr)
 void NceCabBus::setLCDMoveCursorHandler(LCDMoveCursorHandler funcPtr)
 {
 	func_LCDMoveCursorHandler = funcPtr;
+}
+
+void NceCabBus::setLCDCursorModeHandler(LCDCursorModeHandler funcPtr)
+{
+	func_LCDCursorModeHandler = funcPtr;
 }
 
 void NceCabBus::setLCDPrintCharHandler(LCDPrintCharHandler funcPtr)
@@ -261,9 +261,10 @@ void NceCabBus::processByte(uint8_t inByte)
 					case CMD_MOVE_CURSOR:
 						if(func_LCDMoveCursorHandler)
 						{
-							if(cmdBuffer[1] <= 0x8F)
+							if((cmdBuffer[1] >= 0x80) && (cmdBuffer[1] <= 0x8F))
 								func_LCDMoveCursorHandler(cmdBuffer[1] - 0x80, 0);
-							else if(cmdBuffer[1] <= 0xCF)
+								
+							else if((cmdBuffer[1] >= 0xC0) && (cmdBuffer[1] <= 0xCF))
 								func_LCDMoveCursorHandler(cmdBuffer[1] - 0xC0, 1); 
 						}
 						break;
@@ -273,6 +274,26 @@ void NceCabBus::processByte(uint8_t inByte)
 						if(func_LCDPrintCharHandler)
 							func_LCDPrintCharHandler((char)(cmdBuffer[1] & CMD_ASCII_MASK), Command == CMD_PR_TTY_NEXT );
 						break;
+						
+					case CMD_HOME:
+						if(func_LCDCursorModeHandler)
+							func_LCDCursorModeHandler(CURSOR_HOME);
+												
+					case CMD_CLEAR_HOME:
+						if(func_LCDCursorModeHandler)
+							func_LCDCursorModeHandler(CURSOR_CLEAR_HOME);
+												
+					case CMD_CURSOR_OFF:
+						if(func_LCDCursorModeHandler)
+							func_LCDCursorModeHandler(CURSOR_OFF);
+												
+					case CMD_CURSOR_ON:
+						if(func_LCDCursorModeHandler)
+							func_LCDCursorModeHandler(CURSOR_ON);
+
+					case CMD_DISP_RIGHT:
+						if(func_LCDCursorModeHandler)
+							func_LCDCursorModeHandler(DISPLAY_SHIFT_RIGHT);
 												
 				}
 			}
@@ -320,8 +341,8 @@ void NceCabBus::processByte(uint8_t inByte)
 
 void NceCabBus::send1ByteResponse(uint8_t byte0)
 {
-	if(func_RS485SendByte)
-		func_RS485SendByte(byte0);
+	if(func_RS485SendBytes)
+		func_RS485SendBytes(&byte0, 1);
 }
 
 void NceCabBus::send2BytesResponse(uint8_t byte0, uint8_t byte1)
@@ -350,10 +371,12 @@ uint16_t NceCabBus::getAuiIoState(void)
 void NceCabBus::setAuiIoBitState(uint8_t IoNum, bool bitState)
 {
 	if(IoNum < AIU_NUM_IOS)
+	{
 		if(bitState)
 			aiuState |= 1 << IoNum;
 		else
 			aiuState &= ~(1 << IoNum);
+	}
 }
     
 bool NceCabBus::getAuiIoBitState(uint8_t IoNum)

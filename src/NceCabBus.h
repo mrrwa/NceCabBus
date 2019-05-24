@@ -62,11 +62,24 @@ typedef enum
 	FAST_CLOCK_PM = 'P'
 } FAST_CLOCK_MODE;
 
+typedef enum
+{
+	CURSOR_CLEAR_HOME = 0,
+	CURSOR_HOME,
+	CURSOR_OFF,
+	CURSOR_ON,
+	DISPLAY_SHIFT_RIGHT,
+	DISPLAY_SHIFT_LEFT,
+} CURSOR_MODE;
+
+
+
 typedef void (*RS485SendByte)(uint8_t value);
 typedef void (*RS485SendBytes)(uint8_t *values, uint8_t length);
 typedef void (*FastClockHandler)(uint8_t Hours, uint8_t Minutes, uint8_t Rate, FAST_CLOCK_MODE Mode);
 typedef void (*LCDUpdateHandler)(uint8_t Col, uint8_t Row, char *msg, uint8_t len);
 typedef void (*LCDMoveCursorHandler)(uint8_t Col, uint8_t Row);
+typedef void (*LCDCursorModeHandler)(CURSOR_MODE mode);
 typedef void (*LCDPrintCharHandler)(char ch, bool advanceCursor);
 
 class NceCabBus
@@ -85,10 +98,10 @@ class NceCabBus
     
     void processByte(uint8_t inByte);
     
-    void setRS485SendByteHandler(RS485SendByte funcPtr);
     void setRS485SendBytesHandler(RS485SendBytes funcPtr);
     void setLCDUpdateHandler(LCDUpdateHandler funcPtr);
     void setLCDMoveCursorHandler(LCDMoveCursorHandler funcPtr);
+    void setLCDCursorModeHandler(LCDCursorModeHandler funcPtr);
     void setLCDPrintCharHandler(LCDPrintCharHandler funcPtr);
 
     void setFastClockHandler(FastClockHandler funcPtr);
@@ -125,11 +138,11 @@ class NceCabBus
   	void		send1ByteResponse(uint8_t byte0);
   	void		send2BytesResponse(uint8_t byte0, uint8_t byte1);
   	
-  	RS485SendByte					func_RS485SendByte;
   	RS485SendBytes				func_RS485SendBytes;
   	FastClockHandler 			func_FastClockHandler;
   	LCDUpdateHandler			func_LCDUpdateHandler;
   	LCDMoveCursorHandler 	func_LCDMoveCursorHandler;
+  	LCDCursorModeHandler	func_LCDCursorModeHandler;
   	LCDPrintCharHandler 	func_LCDPrintCharHandler;
   	
   	uint8_t getCmdDataLen(uint8_t cmd, uint8_t Broadcast);
