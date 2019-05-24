@@ -1,106 +1,138 @@
-// NCE Auxiliary Input Unit (AIU) Example
+/*-------------------------------------------------------------------------------------------------------
+// Model Railroading with Arduino - NCE Auxiliary Input Unit (AIU) Example 
 //
-// Author: Alex Shepherd 2019-05-11
-// 
-// This example requires a RS485 library which you can install from the Arduino Library Manager. Search for: RS485HwSerial
+// Copyright (c) 2019 Alex Shepherd
 //
-// The RS485HwSerial documentation can be found here: https://github.com/sauttefk/RS485HwSerial
+// This source file is subject of the GNU general public license 2,
+// that is available at the world-wide-web at: http://www.gnu.org/licenses/gpl.txt
+//-------------------------------------------------------------------------------------------------------
+// file:      AIU-M32U4.ino
+// author:    Alex Shepherd
+// webpage:   http://mrrwa.org/
+// history:   2019-04-28 Initial Version
+//-------------------------------------------------------------------------------------------------------
+// purpose:   Demonstrate how to use the NceCabBus library to build a Auxiliary Input Unit (AIU) device
 //
-// This example was developed on an Arduino Pro Micro which has the AVR MEGA32U4 chip. It uses this native USB port for Serial output
-// which left the hardware UART for RS485 comms.
+// additional hardware:
+//            - An RS485 Interface chip - there are many but the code assumes that the TX & RX Exnable pins
+//              are wired together and connected to the Arduino Output Pin defined by RS485_TX_ENABLE_PIN
+//            - 14 Input Pins defined in the "aiuInputPins" array definition below   
 //
-// The RS485 library requires an extra hardware pin to enable the Tx mode, which is defined in the macro RS485_TX_ENABLE_PIN below
+// notes:     This example was developed on an Arduino Pro Micro which has the AVR MEGA32U4 chip.
+//            It uses this native USB port for Serial Debug output which left the hardware UART 
+//            for RS485 comms.
 //
-// As the FactClock function is performed by passively listening for clock updates from the Master, there is no need to register
-// any S485SendByteHandler handlers or set a Node Address, which makes things pretty simple.
+// required libraries:
+//            Bounce2 library can be installed using the Arduino Library Manager
+//-------------------------------------------------------------------------------------------------------*/
 
-#include <RS485HwSerial.h>
 #include <Bounce2.h>
 #include <NceCabBus.h>
 
+// Change the #define below to match the Serial port you're using for RS485 
+#define RS485Serial Serial1
+
+// Change the #define below to match the RS485 Chip TX Enable pin 
 #define RS485_TX_ENABLE_PIN 4
+
+// Change the #define below to set the AIU Cab Bus Address 
 #define CAB_BUS_ADDRESS			8
-#define NUM_AIU_INPUTS     14
-#define DEBOUNCE_MS        20
 
+// Uncomment the #define below to enable Debug Output and/or change to write Debug Output to another Serialx device 
+//#define DebugMonSerial Serial
 
-// Uncomment the line below to enable Debug output of the RS485 Data
+#ifdef DebugMonSerial
+// Uncomment the #define below to enable printing of RS485 Bytes Debug output to the DebugMonSerial device
 //#define DEBUG_RS485_BYTES
 
 // Uncomment the line below to enable Debug output of the AIU Inputs Changes
-#define DEBUG_INPUT_CHANGES
+//#define DEBUG_INPUT_CHANGES
 
-NceCabBus cabBus;
-                    // AIU Input Numbers  1 2 3 4 5 6 7  8  9 10 11 12 13 14
+// Uncomment the #define below to enable printing of NceCabBus Library Debug output to the DebugMonSerial device
+//#define DEBUG_LIBRARY
+
+#if defined(DEBUG_RS485_BYTES) || defined(DEBUG_INPUT_CHANGES) || defined(DEBUG_LIBRARY) || defined(DebugMonSerial)
+#define ENABLE_DEBUG_SERIAL
+#endif
+#endif
+
+// Change the #define below to set the Number of AIU Inputs to be scanned 
+#define NUM_AIU_INPUTS     14
+
+// Uncomment the #define below to invert the state if inputs. By default the inputs are active Low   
+#define AIU_INPUT_INVERT
+
+// The Array below maps Arduino Pins to AUI Inputs, change as required 
+//                     AIU Input Numbers  1 2 3 4 5 6 7  8  9 10 11 12 13 14
 uint8_t aiuInputPins[NUM_AIU_INPUTS] =   {2,3,5,6,7,8,9,10,16,14,15,18,19,20};
+
+// Change the #define below to set the Number of Debounce milliseconds for the AIU Inputs 
+#define DEBOUNCE_MS        20
 
 Bounce * aiuInputs = new Bounce[NUM_AIU_INPUTS];
 
-void sendRS485Byte(uint8_t value)
-{
-	// Seem to need a short delay to make sure the RS485 Master has disable Tx and is ready for our response
-  delayMicroseconds(200);
-  
-  RS485HwSerial1.write(value);
-
-#ifdef DEBUG_RS485_BYTES  
-  Serial.print("T:");
-  
-  if(value < 16)
-    Serial.print('0');
-    
-  Serial.print(value, HEX);
-  Serial.print(' ');
-#endif
-}
+NceCabBus cabBus;
 
 void sendRS485Bytes(uint8_t *values, uint8_t length)
 {
-	// Seem to need a short delay to make sure the RS485 Master has disable Tx and is ready for our response
+  // Seem to need a short delay to make sure the RS485 Master has disable Tx and is ready for our response
   delayMicroseconds(200);
   
-  RS485HwSerial1.write(values, length);
+  digitalWrite(RS485_TX_ENABLE_PIN, HIGH);
+  RS485Serial.write(values, length);
+  RS485Serial.flush();
+  digitalWrite(RS485_TX_ENABLE_PIN, LOW);
 
 #ifdef DEBUG_RS485_BYTES  
-  Serial.print("T:");
+  DebugMonSerial.print("T:");
   for(uint8_t i = 0; i < length; i++)
   {
     uint8_t value = values[i];
     
     if(value < 16)
-      Serial.print('0');
+      DebugMonSerial.print('0');
   
-    Serial.print(value, HEX);
-    Serial.print(' ');
+    DebugMonSerial.print(value, HEX);
+    DebugMonSerial.print(' ');
   }
 #endif
 }
 
 void setup() {
   uint32_t startMillis = millis();
-  Serial.begin(115200);
-    while (!Serial && ((millis() - startMillis) < 3000)); // wait for serial port to connect. Needed for native USB
+  const char* splashMsg = "NCE AIU Example";
 
-	if(Serial)
-  	Serial.println("\nNCE AIU Example 1");
-  
-	  // Enable Weak Pull-Up on RX to handle when RS485 is in TX Mode and RX goes High-Z
-  pinMode(0, INPUT_PULLUP);
-  RS485HwSerial1.transmitterEnable(RS485_TX_ENABLE_PIN);
-  
-  RS485HwSerial1.begin(9600, SERIAL_8N2);
+#ifdef ENABLE_DEBUG_SERIAL
+  DebugMonSerial.begin(115200);
+  while (!DebugMonSerial && ((millis() - startMillis) < 3000)); // wait for serial port to connect. Needed for native USB
 
-  cabBus.setRS485SendByteHandler(&sendRS485Byte);
-  cabBus.setRS485SendBytesHandler(&sendRS485Bytes);
+  if(DebugMonSerial)
+  {
+#ifdef DEBUG_LIBRARY    
+    cabBus.setLogger(&DebugMonSerial);
+#endif
+    DebugMonSerial.println();
+    DebugMonSerial.println(splashMsg);
+  }
+#endif
+
+  pinMode(RS485_TX_ENABLE_PIN, OUTPUT);
+  digitalWrite(RS485_TX_ENABLE_PIN, LOW);
+  RS485Serial.begin(9600, SERIAL_8N2);
 
   cabBus.setCabType(CAB_TYPE_AIU);
   cabBus.setCabAddress(CAB_BUS_ADDRESS);
+  cabBus.setRS485SendBytesHandler(&sendRS485Bytes);
 
   for(uint8_t i = 0; i < NUM_AIU_INPUTS; i++)
   {
     aiuInputs[i].attach(aiuInputPins[i], INPUT_PULLUP);       //setup the bounce instance for the current button
     aiuInputs[i].interval(DEBOUNCE_MS);
+#ifdef AIU_INPUT_INVERT
+    cabBus.setAuiIoBitState(i, !aiuInputs[i].read());  
+#else
     cabBus.setAuiIoBitState(i, aiuInputs[i].read());  
+#endif
   }
 }
 
@@ -108,20 +140,20 @@ void setup() {
 uint16_t aiuInputIndex = 0;
 
 void loop() {
-  while(RS485HwSerial1.available())
+  while(RS485Serial.available())
   {
-    uint8_t rxByte = RS485HwSerial1.read();
+    uint8_t rxByte = RS485Serial.read();
 
 #ifdef DEBUG_RS485_BYTES  
     if((rxByte & 0xC0) == 0x80)
     {
-      Serial.println();
-      Serial.println();
+      DebugMonSerial.println();
+      DebugMonSerial.println();
     }
       
-    Serial.print("R:");
-    Serial.print(rxByte, HEX);
-    Serial.print(' ');
+    DebugMonSerial.print("R:");
+    DebugMonSerial.print(rxByte, HEX);
+    DebugMonSerial.print(' ');
 #endif
 
     cabBus.processByte(rxByte);
@@ -136,14 +168,19 @@ void loop() {
   if(aiuInputs[aiuInputIndex].update()) // Check for a change
   {
     uint8_t newPinState = aiuInputs[aiuInputIndex].read();
+#ifdef AIU_INPUT_INVERT
+    newPinState = !newPinState;
+#endif
+
 #ifdef DEBUG_INPUT_CHANGES    
-    Serial.print("Input Changed: Index: ");
-    Serial.print(aiuInputIndex);
-    Serial.print(" Pin: ");
-    Serial.print(aiuInputPins[aiuInputIndex]);
-    Serial.print(" State: ");
-    Serial.println(newPinState);
+    DebugMonSerial.print("Input Changed: Index: ");
+    DebugMonSerial.print(aiuInputIndex);
+    DebugMonSerial.print(" Pin: ");
+    DebugMonSerial.print(aiuInputPins[aiuInputIndex]);
+    DebugMonSerial.print(" State: ");
+    DebugMonSerial.println(newPinState);
 #endif    
+    
     cabBus.setAuiIoBitState(aiuInputIndex, newPinState);
   }
   

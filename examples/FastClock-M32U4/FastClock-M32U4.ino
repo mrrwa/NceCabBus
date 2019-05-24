@@ -1,81 +1,134 @@
-// NCE FastClock Example
+/*-------------------------------------------------------------------------------------------------------
+// Model Railroading with Arduino - NCE FastClock Example
 //
-// Author: Alex Shepherd 2019-05-11
-// 
-// This example requires a RS485 library which you can install from the Arduino Library Manager. Search for: RS485HwSerial
+// Copyright (c) 2019 Alex Shepherd
 //
-// The RS485HwSerial documentation can be found here: https://github.com/sauttefk/RS485HwSerial
+// This source file is subject of the GNU general public license 2,
+// that is available at the world-wide-web at: http://www.gnu.org/licenses/gpl.txt
+//-------------------------------------------------------------------------------------------------------
+// file:      FastClock-M32U4.ino
+// author:    Alex Shepherd
+// webpage:   http://mrrwa.org/
+// history:   2019-04-28 Initial Version
+//-------------------------------------------------------------------------------------------------------
+// purpose:   Demonstrate how to use the NceCabBus library to build a FastClock that writes to the Serial Output
 //
-// This example was developed on an Arduino Pro Micro which has the AVR MEGA32U4 chip. It uses this native USB port for Serial output
-// which left the hardware UART for RS485 comms.
+//            As the FactClock function is performed by passively listening for clock updates from the Master,
+//            there is no need to register any RS485SendBytesHandler handlers or set a Node Address,
+//            which makes things pretty simple.
 //
-// The RS485 library requires an extra hardware pin to enable the Tx mode, which is defined in the macro RS485_TX_ENABLE_PIN below
+// additional hardware:
+//            - An RS485 Interface chip - there are many but the code assumes that the TX & RX Exnable pins
+//              are wired together and connected to the Arduino Output Pin defined by RS485_TX_ENABLE_PIN
 //
-// As the FactClock function is performed by passively listening for clock updates from the Master, there is no need to register
-// any S485SendByteHandler handlers or set a Node Address, which makes things pretty simple.
-
-#include <RS485HwSerial.h>
-
-#define RS485_TX_ENABLE_PIN 4
+// notes:     This example was developed on an Arduino Pro Micro which has the AVR MEGA32U4 chip.
+//            It uses this native USB port for Serial Debug output which left the hardware UART 
+//            for RS485 comms.
+//
+// required libraries:
+//            Bounce2 library can be installed using the Arduino Library Manager
+//-------------------------------------------------------------------------------------------------------*/
 
 #include <NceCabBus.h>
 
-//#define DEBUG_BYTES
+// Change the #define below to match the Serial port you're using for RS485 
+#define RS485Serial Serial1
+
+// Change the #define below to match the RS485 Chip TX Enable pin 
+#define RS485_TX_ENABLE_PIN 4
+
+// Uncomment the #define below to enable Debug Output and/or change to write Debug Output to another Serialx device 
+#define DebugMonSerial Serial
+
+#ifdef DebugMonSerial
+// Uncomment the #define below to enable printing of RS485 Bytes Debug output to the DebugMonSerial device
+//#define DEBUG_RS485_BYTES
+
+// Uncomment the #define below to enable printing of NceCabBus Library Debug output to the DebugMonSerial device
+//#define DEBUG_LIBRARY
+
+#if defined(DEBUG_RS485_BYTES) || defined(DEBUG_LIBRARY) || defined(DebugMonSerial)
+#define ENABLE_DEBUG_SERIAL
+#endif
+#endif
 
 NceCabBus cabBus;
 
 void FastClockUpdate(uint8_t Hours, uint8_t Minutes, uint8_t Rate, FAST_CLOCK_MODE Mode)
 {
-	Serial.print("\nFastClock Update: ");
+	DebugMonSerial.print("\nFastClock Update: ");
 
 	if(Hours < 10)
-	  Serial.print('0');
+	  DebugMonSerial.print('0');
   
-	Serial.print(Hours);
+	DebugMonSerial.print(Hours);
 
-	Serial.print(':');
+	DebugMonSerial.print(':');
 
 	if(Minutes < 10)
-	  Serial.print('0');
+	  DebugMonSerial.print('0');
   
-	Serial.print(Minutes);
+	DebugMonSerial.print(Minutes);
 
 	switch(Mode)
 	{
 	  case FAST_CLOCK_AM:
-		Serial.print("AM");
+		DebugMonSerial.print("AM");
 		break;
     
 	  case FAST_CLOCK_PM:
-		Serial.print("PM");
+		DebugMonSerial.print("PM");
 		break;
 	}
 
-	Serial.print(" Rate: ");
-	Serial.print(Rate, DEC);
-	Serial.println(":1");
+	DebugMonSerial.print(" Rate: ");
+	DebugMonSerial.print(Rate, DEC);
+	DebugMonSerial.println(":1");
 }
 
 
 void setup() {
   uint32_t startMillis = millis();
-  Serial.begin(115200);
-    while (!Serial && ((millis() - startMillis) < 3000)); // wait for serial port to connect. Needed for native USB
+  const char* splashMsg = "NCE FastClock-Serial Example";
 
-  if(Serial)
+#ifdef ENABLE_DEBUG_SERIAL
+  DebugMonSerial.begin(115200);
+  while (!DebugMonSerial && ((millis() - startMillis) < 3000)); // wait for serial port to connect. Needed for native USB
+
+  if(DebugMonSerial)
   {
-    cabBus.setLogger(&Serial);
-    Serial.println("NCE Fast Clock Example 1");
+#ifdef DEBUG_LIBRARY    
+    cabBus.setLogger(&DebugMonSerial);
+#endif
+    DebugMonSerial.println();
+    DebugMonSerial.println(splashMsg);
   }
-    // Enable Weak Pull-Up on RX to handle when RS485 is in TX Mode and RX goes High-Z
-  pinMode(0, INPUT_PULLUP);
-  RS485HwSerial1.transmitterEnable(RS485_TX_ENABLE_PIN);
-  RS485HwSerial1.begin(9600, SERIAL_8N2);
+#endif
+
+  pinMode(RS485_TX_ENABLE_PIN, OUTPUT);
+  digitalWrite(RS485_TX_ENABLE_PIN, LOW);
+  RS485Serial.begin(9600, SERIAL_8N2);
 
   cabBus.setFastClockHandler(&FastClockUpdate);
 }
 
 void loop() {
-  if(RS485HwSerial1.available())
-    cabBus.processByte(RS485HwSerial1.read());
+  while(RS485Serial.available())
+  {
+    uint8_t rxByte = RS485Serial.read();
+
+#ifdef DEBUG_RS485_BYTES  
+    if((rxByte & 0xC0) == 0x80)
+    {
+      DebugMonSerial.println();
+      DebugMonSerial.println();
+    }
+      
+    DebugMonSerial.print("R:");
+    DebugMonSerial.print(rxByte, HEX);
+    DebugMonSerial.print(' ');
+#endif
+
+    cabBus.processByte(rxByte);
+  }
 }  // End loop
