@@ -43,10 +43,17 @@ GND +--------------------------------------------------- Cab Bus Pin 2
 ----+                                                
                                                                    
 ```
-Here's some pictures of my development prototypes
 
-![OLED Throttle with 4x4 keypad and Potentiometer Speed knob](docs/OLED-Throttle.jpg "OLED Throttle with 4x4 keypad and Potentiometer Speed knob") 
+## Development Prototypes Pictures 
 
-![OLED Throttle and NCE PowerCAB side-by-side](docs/Throttles.jpg "OLED Throttle and NCE PowerCAB side-by-side") 
+### OLED Throttle with 4x4 keypad and Potentiometer Speed knob
 
-![FastClock Serial Output](docs/FastClockSerial.png "FastClock Serial Output")
+![OLED Throttle with 4x4 keypad and Potentiometer Speed knob](docs/OLED-Throttle.jpg) 
+
+### OLED Throttle and NCE PowerCAB side-by-side
+
+![OLED Throttle and NCE PowerCAB side-by-side](docs/Throttles.jpg) 
+
+### FastClock Serial Output
+
+![FastClock Serial Output](docs/FastClockSerial.png)
