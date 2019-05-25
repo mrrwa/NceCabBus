@@ -1,18 +1,77 @@
 #######################################
-# Syntax Coloring Map Servo
-#######################################
-
-#######################################
 # Datatypes (KEYWORD1)
 #######################################
 
-NceCabBus	KEYWORD1
+NceCabBus									KEYWORD1
+RS485SendByte							KEYWORD1
+RS485SendBytes						KEYWORD1
+FastClockHandler					KEYWORD1
+LCDUpdateHandler					KEYWORD1
+LCDMoveCursorHandler			KEYWORD1
+LCDCursorModeHandler			KEYWORD1
+LCDPrintCharHandler				KEYWORD1
+
+CAB_TYPE									KEYWORD1
+CAB_STATE									KEYWORD1
+FAST_CLOCK_MODE						KEYWORD1
+CURSOR_MODE								KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)
 #######################################
 
+setLogger									KEYWORD2
+getCabType								KEYWORD2
+setCabType								KEYWORD2
+getCabAddress							KEYWORD2
+setCabAddress							KEYWORD2
+getCabState								KEYWORD2
+processByte								KEYWORD2
+setRS485SendBytesHandler	KEYWORD2
+setLCDUpdateHandler				KEYWORD2
+setLCDMoveCursorHandler		KEYWORD2
+setLCDCursorModeHandler		KEYWORD2
+setLCDPrintCharHandler		KEYWORD2
+setFastClockHandler				KEYWORD2
+setAuiIoState							KEYWORD2
+getAuiIoState							KEYWORD2
+setAuiIoBitState 					KEYWORD2
+getAuiIoBitState					KEYWORD2
+setSpeedKnob							KEYWORD2
+getSpeedKnob							KEYWORD2
+setKeyPress								KEYWORD2
+
 #######################################
 # Constants (LITERAL1)
+#######################################
+
+AIU_NUM_IOS								LITERAL1
+CMD_LEN_MAX								LITERAL1
+
+CAB_TYPE_UNKNOWN					LITERAL1
+CAB_TYPE_LCD							LITERAL1
+CAB_TYPE_NO_LCD						LITERAL1
+CAB_TYPE_SMART						LITERAL1
+CAB_TYPE_AIU							LITERAL1	
+CAB_TYPE_RESERVED					LITERAL1
+CAB_TYPE_XBUS_BRIDGE			LITERAL1
+CAB_TYPE_LOCONET_BRIDGE		LITERAL1
+
+CAB_STATE_UNKNOWN					LITERAL1
+CAB_STATE_PING_OTHER			LITERAL1
+CAB_STATE_EXEC_MY_CMD			LITERAL1
+CAB_STATE_EXEC_BROADCAST_CMD	LITERAL1
+
+FAST_CLOCK_NOT_SET				LITERAL1
+FAST_CLOCK_24							LITERAL1
+FAST_CLOCK_AM							LITERAL1
+FAST_CLOCK_PM							LITERAL1
+
+CURSOR_CLEAR_HOME					LITERAL1
+CURSOR_HOME								LITERAL1
+CURSOR_OFF								LITERAL1
+CURSOR_ON									LITERAL1
+DISPLAY_SHIFT_RIGHT				LITERAL1
+DISPLAY_SHIFT_LEFT				LITERAL1
 
 #######################################
