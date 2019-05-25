@@ -44,7 +44,7 @@ GND +--------------------------------------------------- Cab Bus Pin 2
                                                                    
 ```
 
-## Development Prototypes Pictures 
+## Development Prototype Pictures 
 
 ### OLED Throttle with 4x4 keypad and Potentiometer Speed knob
 
