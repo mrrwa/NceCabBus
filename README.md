@@ -1,12 +1,12 @@
-# NceCabBus
+# NceCabBus - NCE Cab Bus Library
 
-NCE Cab Bus Library
-
-The **NceCabBus** library allows you to interface to a NCE Cab Bus via an RS485 Interface and provides examples that implement
-an OLED Throttle, an AIU and a FastClock that outputs the time to the Arduino Serial Port.
+The **NceCabBus** library allows you to interface to a NCE Cab Bus via an RS485 Interface and provides examples that implement the following devices:
+- Throttle with a 128x32 Pixel OLED Display, a 4x4 Keypad and a Potentiometer Speed knob
+- Auxiliary Input Unit (AIU)
+- FastClock that outputs the time to the Arduino Serial Port.
 
 The library does not provide the actual RS485 interface - it only provides the logic to process NCE Cab Bus messages,
-however the examples show a simple connection to a common RS485 chip and drive the TX Enable directly 
+however the examples show a simple connection to a common RS485 chip and drive the TX Enable directly. 
 
 ## Connecting RS485 Transceiver
 ASCII schematic of connecting a half-duplex RS485 transceiver e.g. MAX487CSA+ to a microcontroller.
@@ -43,4 +43,10 @@ GND +--------------------------------------------------- Cab Bus Pin 2
 ----+                                                
                                                                    
 ```
+Here's some pictures of my development prototypes
 
+![OLED Throttle with 4x4 keypad and Potentiometer Speed knob](docs/OLED-Throttle.jpg "OLED Throttle with 4x4 keypad and Potentiometer Speed knob") 
+
+![OLED Throttle and NCE PowerCAB side-by-side](docs/Throttles.jpg "OLED Throttle and NCE PowerCAB side-by-side") 
+
+![FastClock Serial Output](docs/FastClockSerial.png "FastClock Serial Output")
