@@ -46,7 +46,8 @@ GND +--------------------------------------------------- Cab Bus Pin 2
 ## Example DIY Strip-board RS485 Transceiver
 These two pictures show how you can build your own RS485 interface with a bit of Strip-board and a RS485 chip to get started with interfacing to a NCE Cab Bus
 
-!(docs/ArdProMicro-RS485.jpg) !(docs/RS485-StripBoard.jpg)
+![Arduino Pro Micro with RS485 Strip-board Interface](docs/ArdProMicro-RS485.jpg)
+![Back of the Strip-board interface](docs/RS485-StripBoard.jpg)
 
 ## Development Prototype Pictures 
 
