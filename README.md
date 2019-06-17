@@ -10,8 +10,7 @@ however the examples show a simple connection to a common RS485 chip and drive t
 
 ## Connecting RS485 Transceiver
 ASCII schematic of connecting a half-duplex RS485 transceiver e.g. MAX487CSA+ to a microcontroller.
-Note: the /RE & TE pins on the RS485 chip are connected together and connect to the Arduino pin 
-      defined by RS485_TX_ENABLE_PIN in the examples    
+Note: the /RE & TE pins on the RS485 chip are connected together and connect to the Arduino pin defined by RS485_TX_ENABLE_PIN in the examples
 
 ```
 ----+      
@@ -43,6 +42,11 @@ GND +--------------------------------------------------- Cab Bus Pin 2
 ----+                                                
                                                                    
 ```
+
+## Example DIY Strip-board RS485 Transceiver
+These two pictures show how you can build your own RS485 interface with a bit of Strip-board and a RS485 chip to get started with interfacing to a NCE Cab Bus
+
+!(docs/ArdProMicro-RS485.jpg) !(docs/RS485-StripBoard.jpg)
 
 ## Development Prototype Pictures 
 
