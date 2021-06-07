@@ -14,7 +14,7 @@
 // author:    Alex Shepherd
 // webpage:   http://mrrwa.org/
 // history:   2019-04-28 Initial Version
-//
+// history1:  2021-05-30 Paul Hardey added 5 byte send for smart device
 //------------------------------------------------------------------------
 //
 // purpose:   Provide a simplified interface to the NCE Cab Bus
@@ -72,10 +72,9 @@ typedef enum
 	DISPLAY_SHIFT_LEFT,
 } CURSOR_MODE;
 
-
-
 typedef void (*RS485SendByte)(uint8_t value);
 typedef void (*RS485SendBytes)(uint8_t *values, uint8_t length);
+typedef void (*USBSendBytes)(uint8_t *values, uint8_t length);
 typedef void (*FastClockHandler)(uint8_t Hours, uint8_t Minutes, uint8_t Rate, FAST_CLOCK_MODE Mode);
 typedef void (*LCDUpdateHandler)(uint8_t Col, uint8_t Row, char *msg, uint8_t len);
 typedef void (*LCDMoveCursorHandler)(uint8_t Col, uint8_t Row);
@@ -97,8 +96,10 @@ class NceCabBus
     CAB_STATE getCabState();
     
     void processByte(uint8_t inByte);
+    void processUSBByte(uint8_t inByte);
     
     void setRS485SendBytesHandler(RS485SendBytes funcPtr);
+    void setUSBSendBytesHandler(USBSendBytes funcPtr);
     void setLCDUpdateHandler(LCDUpdateHandler funcPtr);
     void setLCDMoveCursorHandler(LCDMoveCursorHandler funcPtr);
     void setLCDCursorModeHandler(LCDCursorModeHandler funcPtr);
@@ -114,7 +115,8 @@ class NceCabBus
     
     void setSpeedKnob(uint8_t speed);
     uint8_t getSpeedKnob(void);
-    void setKeyPress(uint8_t keyCode); 
+    void setKeyPress(uint8_t keyCode);
+	void setUSBCommand(uint8_t addr_h,uint8_t addr_l,uint8_t op_1,uint8_t data_1,uint8_t checksum);
 
   private:
   	CAB_TYPE	cabType;
@@ -130,6 +132,14 @@ class NceCabBus
   	
   	uint8_t		speedKnob; // Range 0-126, 127 = knob not used
   	uint8_t		keyCode; // Range 0-126, 127 = knob not used
+	
+	
+	uint8_t		_addr_h;		// Address high byte
+	uint8_t		_addr_l;		// Address low byte
+	uint8_t		_op_1;		// Operation code
+	uint8_t		_data_1;		// data for operation code
+	uint8_t		_checksum;	// xor checksum of previous 4 bytes
+	
   	
   	uint8_t		cmdBufferIndex;
   	uint8_t		cmdBufferExpectedLength;
@@ -137,8 +147,10 @@ class NceCabBus
   	
   	void		send1ByteResponse(uint8_t byte0);
   	void		send2BytesResponse(uint8_t byte0, uint8_t byte1);
+  	uint8_t		calcChecksum(uint8_t *Buffer, uint8_t Length);
   	
   	RS485SendBytes				func_RS485SendBytes;
+  	USBSendBytes				func_USBSendBytes;
   	FastClockHandler 			func_FastClockHandler;
   	LCDUpdateHandler			func_LCDUpdateHandler;
   	LCDMoveCursorHandler 	func_LCDMoveCursorHandler;

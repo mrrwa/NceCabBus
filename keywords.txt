@@ -28,6 +28,7 @@ setCabAddress							KEYWORD2
 getCabState								KEYWORD2
 processByte								KEYWORD2
 setRS485SendBytesHandler	KEYWORD2
+setUSBSendBytesHandler		KEYWORD2
 setLCDUpdateHandler				KEYWORD2
 setLCDMoveCursorHandler		KEYWORD2
 setLCDCursorModeHandler		KEYWORD2

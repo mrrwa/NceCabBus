@@ -1,5 +1,97 @@
 #include "NceCabBus.h"
 
+#define MAX_USB_COMMAND_LENGTH	11
+typedef struct
+{
+	uint8_t expectedLength;
+	uint8_t count;
+	uint8_t data[MAX_USB_COMMAND_LENGTH];
+} USBCommand;
+
+#define CAB_BUS_COMMAND_LENGTH	5
+typedef struct
+{
+	uint8_t count;
+	uint8_t data[CAB_BUS_COMMAND_LENGTH];
+} CabBusCommand;
+
+typedef struct
+{
+	uint8_t count;
+	uint8_t data[MAX_USB_COMMAND_LENGTH];
+} USBResponse;
+
+USBCommand USBCommandBuffer;
+USBResponse USBResponseBuffer;
+CabBusCommand CabBusCommandBuffer;
+
+const uint8_t USBCommandLengths[] = {
+	1, // 0x80
+	0, // 0x81
+	0, // 0x82
+	0, // 0x83
+	0, // 0x84
+	0, // 0x85
+	0, // 0x86
+	0, // 0x87
+	0, // 0x88
+	0, // 0x89
+	0, // 0x8A
+	0, // 0x8B
+	1, // 0x8C
+	0, // 0x8D
+	0, // 0x8E
+	0, // 0x8F
+	0, // 0x90
+	0, // 0x91
+	0, // 0x92
+	0, // 0x93
+	0, // 0x94
+	0, // 0x95
+	0, // 0x96
+	0, // 0x97
+	0, // 0x98
+	0, // 0x99
+	0, // 0x9A
+	2, // 0x9B
+	2, // 0x9C
+	0, // 0x9D
+	1, // 0x9E
+	1, // 0x9F
+	4, // 0xA0
+	3, // 0xA1
+	5, // 0xA2
+	0, // 0xA3
+	0, // 0xA4
+	0, // 0xA5
+	3, // 0xA6
+	2, // 0xA7
+	4, // 0xA8
+	3, // 0xA9
+	1, // 0xAA
+	0, // 0xAB
+	0, // 0xAC
+	5, // 0xAD
+	6, // 0xAE
+	6, // 0xAF
+	5, // 0xB0
+	0, // 0xB1
+	0, // 0xB2
+	3, // 0xB3
+	2, // 0xB4
+	2  // 0xB5
+};
+
+int8_t getUSBCommandLength(uint8_t Command)
+{
+	if( (Command < 0x80) && (Command > 0xB5))
+		return -1;
+		
+	uint8_t commandOffset = Command - 0x80;
+	return USBCommandLengths[commandOffset];
+}
+
+
 uint8_t adjustCabBusASCII(uint8_t chr)
 {
 	if(chr & 0x20)
@@ -7,6 +99,100 @@ uint8_t adjustCabBusASCII(uint8_t chr)
 	else
 		return(chr & 0x7F);  // Clear only bit 7
 }
+
+uint8_t NceCabBus::calcChecksum(uint8_t *Buffer, uint8_t Length)
+ {
+    uint8_t checkSum = 0;
+    for(uint8_t i = 0; i < Length; i++)
+    	checkSum ^= Buffer[i];
+
+    return checkSum;
+}
+
+void NceCabBus::processUSBByte(uint8_t inByte)
+{
+	if(USBCommandBuffer.expectedLength)
+	{
+		if( USBCommandBuffer.count < USBCommandBuffer.expectedLength)
+		{
+			USBCommandBuffer.data[USBCommandBuffer.count] = inByte;
+			if(pLogger)
+			{
+				pLogger->print("\nUSB Add Byte: ");
+				if(USBCommandBuffer.count < 16)
+					pLogger->print('0');
+				pLogger->println(USBCommandBuffer.data[USBCommandBuffer.count], HEX);
+			}
+			
+			USBCommandBuffer.count ++;
+		}
+	}
+	else
+	{
+		USBCommandBuffer.expectedLength = getUSBCommandLength(inByte);
+		USBCommandBuffer.data[0] = inByte;
+		USBCommandBuffer.count = 1;
+		
+		if(pLogger)
+		{
+			pLogger->print("\nUSB New Command: ");
+			pLogger->print(USBCommandBuffer.data[0], HEX);
+			pLogger->print("  Expected Length: ");
+			pLogger->println(USBCommandBuffer.expectedLength);
+		}
+	}
+	
+	if( USBCommandBuffer.count >= USBCommandBuffer.expectedLength)
+	{
+		if(pLogger)
+		{
+			pLogger->print("\nProcess USB Command: Count: ");
+			pLogger->print(USBCommandBuffer.count);
+			pLogger->print("  Data: ");
+			for(uint8_t i = 0; i < USBCommandBuffer.count; i++)
+			{
+				if(USBCommandBuffer.data[i] < 16)
+					pLogger->print('0');
+				pLogger->print(USBCommandBuffer.data[i], HEX);
+			}
+			pLogger->println();
+		}
+		
+		switch(USBCommandBuffer.data[0])
+		{
+		  case 0xA2: // Loco Control Command 
+		  	{
+				uint16_t address = 0x0FFF & ((USBCommandBuffer.data[1]<<8)+ USBCommandBuffer.data[2]);
+				CabBusCommandBuffer.data[0] = 0x00FF & (address>>7); // addr_h 
+				CabBusCommandBuffer.data[1] = 0x007F & address;
+				CabBusCommandBuffer.data[2] = USBCommandBuffer.data[3];
+				CabBusCommandBuffer.data[3] = USBCommandBuffer.data[4];
+				CabBusCommandBuffer.data[4] = calcChecksum(CabBusCommandBuffer.data, 4);
+				CabBusCommandBuffer.count = 5;
+				break;
+				}
+
+		  case 0xAA:	// Return USB Interface firmware Version
+			{
+				USBResponseBuffer.data[0] = 7;
+				USBResponseBuffer.data[1] = 3;
+				USBResponseBuffer.data[2] = 3;
+				USBResponseBuffer.count = 3;
+				if(func_USBSendBytes)
+				{
+					func_USBSendBytes(USBResponseBuffer.data, USBResponseBuffer.count);
+					USBResponseBuffer.count = 0;
+				}
+				break;
+			}
+		}
+
+		USBCommandBuffer.expectedLength = 0;
+		USBCommandBuffer.count = 0;
+	}
+}
+
+
 
 uint8_t NceCabBus::getCmdDataLen(uint8_t cmd, uint8_t Broadcast)
 {
@@ -97,6 +283,11 @@ void NceCabBus::setRS485SendBytesHandler(RS485SendBytes funcPtr)
 	func_RS485SendBytes = funcPtr;
 }
 
+void NceCabBus::setUSBSendBytesHandler(USBSendBytes funcPtr)
+{
+	func_USBSendBytes = funcPtr;
+}
+
 void NceCabBus::setFastClockHandler(FastClockHandler funcPtr)
 {
 	func_FastClockHandler = funcPtr;
@@ -152,7 +343,15 @@ uint8_t NceCabBus::getSpeedKnob(void)
 {
 	return speedKnob;
 }
-
+void NceCabBus::setUSBCommand(uint8_t addr_h,uint8_t addr_l,uint8_t op_1,uint8_t data_1,uint8_t checksum)
+{
+	 	_addr_h		= addr_h;
+	 	_addr_l		= addr_l;
+	 	_op_1		= op_1;
+	 	_data_1		= data_1;
+	 	_checksum	= checksum;
+	
+}
 void NceCabBus::setKeyPress(uint8_t keyCode)
 {
 	this->keyCode = keyCode;
@@ -184,10 +383,44 @@ void NceCabBus::processByte(uint8_t inByte)
 			switch(cabType)
 			{
 				case CAB_TYPE_LCD:
-				case CAB_TYPE_NO_LCD:
-				case CAB_TYPE_SMART:
 					send2BytesResponse(keyCode, speedKnob);
 					keyCode = BTN_NO_KEY_DN;
+					break;
+				case CAB_TYPE_NO_LCD:
+					send2BytesResponse(keyCode, speedKnob);
+					keyCode = BTN_NO_KEY_DN;
+					break;
+				case CAB_TYPE_SMART:
+					if(CabBusCommandBuffer.count)
+					{
+						if(func_RS485SendBytes)
+							func_RS485SendBytes(CabBusCommandBuffer.data, CabBusCommandBuffer.count);
+							
+						if(pLogger)
+						{
+							pLogger->print("\nSend RS485: ");
+							for(uint8_t i = 0; i < CabBusCommandBuffer.count; i++)
+							{
+								if(CabBusCommandBuffer.data[i] < 16)
+									pLogger->print('0');
+								pLogger->print(CabBusCommandBuffer.data[i], HEX);
+								pLogger->print(' ');
+							}
+							pLogger->println();
+						}
+						
+						CabBusCommandBuffer.count = 0;
+						
+						if(func_USBSendBytes)
+						{
+							USBResponseBuffer.count = 1;
+							USBResponseBuffer.data[0] = '!';
+							func_USBSendBytes(USBResponseBuffer.data, USBResponseBuffer.count);
+							USBResponseBuffer.count = 0;
+						}
+
+
+					}
 					break;
 		
 				case CAB_TYPE_AIU:
