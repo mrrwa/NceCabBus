@@ -42,10 +42,10 @@
 
 #ifdef DebugMonSerial
 // Uncomment the #define below to enable printing of RS485 Bytes Debug output to the DebugMonSerial device
-//#define DEBUG_RS485_BYTES
+#define DEBUG_RS485_BYTES
 
 // Uncomment the #define below to enable printing of NceCabBus Library Debug output to the DebugMonSerial device
-//#define DEBUG_LIBRARY
+#define DEBUG_LIBRARY
 
 #if defined(DEBUG_RS485_BYTES) || defined(DEBUG_LIBRARY) || defined(DebugMonSerial)
 #define ENABLE_DEBUG_SERIAL
@@ -121,10 +121,13 @@ void loop() {
     if((rxByte & 0xC0) == 0x80)
     {
       DebugMonSerial.println();
-      DebugMonSerial.println();
+      DebugMonSerial.println("Ping");
     }
       
     DebugMonSerial.print("R:");
+    if(rxByte < 16)
+      DebugMonSerial.print('0');
+    
     DebugMonSerial.print(rxByte, HEX);
     DebugMonSerial.print(' ');
 #endif

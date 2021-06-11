@@ -163,6 +163,11 @@ void NceCabBus::processUSBByte(uint8_t inByte)
 		  case 0xA2: // Loco Control Command 
 		  	{
 				uint16_t address = 0x0FFF & ((USBCommandBuffer.data[1]<<8)+ USBCommandBuffer.data[2]);
+				if(address > 9999)
+				{
+					sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
+					return;
+				}
 				CabBusCommandBuffer.data[0] = 0x00FF & (address>>7); // addr_h 
 				CabBusCommandBuffer.data[1] = 0x007F & address;
 				CabBusCommandBuffer.data[2] = USBCommandBuffer.data[3];
@@ -411,15 +416,7 @@ void NceCabBus::processByte(uint8_t inByte)
 						
 						CabBusCommandBuffer.count = 0;
 						
-						if(func_USBSendBytes)
-						{
-							USBResponseBuffer.count = 1;
-							USBResponseBuffer.data[0] = '!';
-							func_USBSendBytes(USBResponseBuffer.data, USBResponseBuffer.count);
-							USBResponseBuffer.count = 0;
-						}
-
-
+						sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
 					}
 					break;
 		
@@ -571,6 +568,16 @@ void NceCabBus::processByte(uint8_t inByte)
 		}
 	}
 }
+
+void NceCabBus::sendUSBResponse(USB_RESPONSE_CODES response)
+{
+	if(func_USBSendBytes)
+	{
+		uint8_t responseBuffer = ord(response)
+		func_USBSendBytes(&responseBuffer, 1);
+	}
+}
+
 
 void NceCabBus::send1ByteResponse(uint8_t byte0)
 {

@@ -72,6 +72,16 @@ typedef enum
 	DISPLAY_SHIFT_LEFT,
 } CURSOR_MODE;
 
+typedef enum
+{
+	USB_COMMAND_NOT_SUPPORTED = '0',
+	USB_ADDRESS_OUT_OF_RANGE = '1',
+	USB_CAB_ADDRESS OR_OPCODE_OUT_OF_RANGE = '2',
+	USB_CV_ADDRESS_OR_DATA_OUT_OF_RANGE = '3',
+	USB_BYTE_COUNT_OUT_OF_RANGE = '4'
+	USB_COMMAND_COMPLETED_SUCCESSFULLY = '!'
+} USB_RESPONSE_CODES;
+
 typedef void (*RS485SendByte)(uint8_t value);
 typedef void (*RS485SendBytes)(uint8_t *values, uint8_t length);
 typedef void (*USBSendBytes)(uint8_t *values, uint8_t length);
@@ -148,6 +158,7 @@ class NceCabBus
   	void		send1ByteResponse(uint8_t byte0);
   	void		send2BytesResponse(uint8_t byte0, uint8_t byte1);
   	uint8_t		calcChecksum(uint8_t *Buffer, uint8_t Length);
+  	void		sendUSBResponse(USB_RESPONSE_CODES response);
   	
   	RS485SendBytes				func_RS485SendBytes;
   	USBSendBytes				func_USBSendBytes;
