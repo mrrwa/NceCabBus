@@ -76,10 +76,10 @@ typedef enum
 {
 	USB_COMMAND_NOT_SUPPORTED = '0',
 	USB_ADDRESS_OUT_OF_RANGE = '1',
-	USB_CAB_ADDRESS OR_OPCODE_OUT_OF_RANGE = '2',
+	USB_CAB_ADDRESS_OR_OPCODE_OUT_OF_RANGE = '2',
 	USB_CV_ADDRESS_OR_DATA_OUT_OF_RANGE = '3',
-	USB_BYTE_COUNT_OUT_OF_RANGE = '4'
-	USB_COMMAND_COMPLETED_SUCCESSFULLY = '!'
+	USB_BYTE_COUNT_OUT_OF_RANGE = '4',
+	USB_COMMAND_COMPLETED_SUCCESSFULLY = '!',
 } USB_RESPONSE_CODES;
 
 typedef void (*RS485SendByte)(uint8_t value);
@@ -143,14 +143,12 @@ class NceCabBus
   	uint8_t		speedKnob; // Range 0-126, 127 = knob not used
   	uint8_t		keyCode; // Range 0-126, 127 = knob not used
 	
-	
-	uint8_t		_addr_h;		// Address high byte
-	uint8_t		_addr_l;		// Address low byte
-	uint8_t		_op_1;		// Operation code
-	uint8_t		_data_1;		// data for operation code
-	uint8_t		_checksum;	// xor checksum of previous 4 bytes
-	
-  	
+  	uint8_t		_addr_h;		// Address high byte
+    uint8_t		_addr_l;		// Address low byte
+    uint8_t		_op_1;		// Operation code
+    uint8_t		_data_1;		// data for operation code
+    uint8_t		_checksum;	// xor checksum of previous 4 bytes
+
   	uint8_t		cmdBufferIndex;
   	uint8_t		cmdBufferExpectedLength;
   	uint8_t		cmdBuffer[CMD_LEN_MAX];
@@ -158,7 +156,7 @@ class NceCabBus
   	void		send1ByteResponse(uint8_t byte0);
   	void		send2BytesResponse(uint8_t byte0, uint8_t byte1);
   	uint8_t		calcChecksum(uint8_t *Buffer, uint8_t Length);
-  	void		sendUSBResponse(USB_RESPONSE_CODES response);
+	void		sendUSBResponse(USB_RESPONSE_CODES response);
   	
   	RS485SendBytes				func_RS485SendBytes;
   	USBSendBytes				func_USBSendBytes;
