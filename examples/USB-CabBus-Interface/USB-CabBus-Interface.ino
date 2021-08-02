@@ -21,6 +21,8 @@
 // notes:     This example was developed on an Arduino Pro Micro which has the AVR MEGA32U4 chip.
 //            It uses this native USB port for Serial Debug output which left the hardware UART 
 //            for RS485 comms.
+//            If you want to use the Debug options whilst connected to JMRI with the USB port
+//            you will need to use an Arduino Mega with extra serial ports
 //
 // required libraries:
 //            NceCabBus which can be found at Alex Shepherd's web page http://mrrwa.org/ 
@@ -61,6 +63,7 @@
 #endif
 #endif
 
+
 // Create Cab Bus Object
 NceCabBus cabBus;
 
@@ -69,6 +72,7 @@ void sendUSBBytes(uint8_t *values, uint8_t length)
     JMRISerial.write(values,length);
     JMRISerial.flush();
 
+#ifdef DEBUG_JMRI_INPUT
     DebugMonSerial.print("\nsendUSBBytes: " );
     for( uint8_t i = 0; i < length; i++)
     {
@@ -78,8 +82,8 @@ void sendUSBBytes(uint8_t *values, uint8_t length)
       DebugMonSerial.print(values[i], HEX);
       DebugMonSerial.print(' ');
     }
-
-    DebugMonSerial.println();
+     DebugMonSerial.println();
+#endif    
 }
 
 
@@ -127,8 +131,8 @@ void setup() {
 #endif
     DebugMonSerial.println();
     DebugMonSerial.println(splashMsg);
-#endif 
   }
+#endif
   
   pinMode(RS485_TX_ENABLE_PIN, OUTPUT);
   digitalWrite(RS485_TX_ENABLE_PIN, LOW);
@@ -142,15 +146,14 @@ void setup() {
 }
 
 void loop() {
-    uint8_t rubbish;
-    
+  
  // Read the incoming bytes on the RS485 cabbus network and processByte
- 
  if(RS485Serial.available())
   {
     uint8_t rxByte = RS485Serial.read();
-    cabBus.processByte(rxByte);  
-  
+    cabBus.processByte(rxByte); 
+   
+
 #ifdef DEBUG_RS485_BYTES  
     if((rxByte & 0xC0) == 0x80)
     {
@@ -160,29 +163,32 @@ void loop() {
       
     DebugMonSerial.print("R:");
     DebugMonSerial.print(rxByte, HEX);
-    DebugMonSerial.print(' ');
+    DebugMonSerial.println(' ');
 #endif
-  }
-  
+
+    }    
+   
+    
     // If we've been Polled and are currently executing Commands then skip other loop() processing
     // so we don't delay any command/response procesing
     
   if(cabBus.getCabState() == CAB_STATE_EXEC_MY_CMD)
     return;
 
- // Read the incoming bytes on the USB processByte
+ // Read the incoming bytes on the USB network and processByte
  
   if(JMRISerial.available())
   {
     uint8_t jmriByte = JMRISerial.read();
-    
     cabBus.processUSBByte(jmriByte);  
 
+#ifdef DEBUG_JMRI_INPUT
     DebugMonSerial.print("\nJMRI R:");
     if(jmriByte < 16)
       DebugMonSerial.print('0');
   
     DebugMonSerial.println(jmriByte, HEX);
+#endif    
   } 
 
 }  // End loop

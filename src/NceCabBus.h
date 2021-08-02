@@ -126,7 +126,7 @@ class NceCabBus
     void setSpeedKnob(uint8_t speed);
     uint8_t getSpeedKnob(void);
     void setKeyPress(uint8_t keyCode);
-	void setUSBCommand(uint8_t addr_h,uint8_t addr_l,uint8_t op_1,uint8_t data_1,uint8_t checksum);
+
 
   private:
   	CAB_TYPE	cabType;
@@ -134,7 +134,7 @@ class NceCabBus
   	uint8_t 	cabAddress;
   	
   	uint16_t	aiuState;
-  	
+	
   	uint8_t		FastClockHours;
   	uint8_t		FastClockMinutes;
   	uint8_t		FastClockRate; // As a Ratio of n:1
@@ -143,12 +143,6 @@ class NceCabBus
   	uint8_t		speedKnob; // Range 0-126, 127 = knob not used
   	uint8_t		keyCode; // Range 0-126, 127 = knob not used
 	
-  	uint8_t		_addr_h;		// Address high byte
-    uint8_t		_addr_l;		// Address low byte
-    uint8_t		_op_1;		// Operation code
-    uint8_t		_data_1;		// data for operation code
-    uint8_t		_checksum;	// xor checksum of previous 4 bytes
-
   	uint8_t		cmdBufferIndex;
   	uint8_t		cmdBufferExpectedLength;
   	uint8_t		cmdBuffer[CMD_LEN_MAX];
