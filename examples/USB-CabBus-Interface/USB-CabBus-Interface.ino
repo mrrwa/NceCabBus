@@ -43,32 +43,34 @@
 #define RS485Serial Serial1
 
 // Change the line below to set the USB Cab Bus Address 
-#define CAB_BUS_ADDRESS     3
+#define CAB_BUS_ADDRESS     5
 
 // Uncomment the #define below to enable Debug Output and/or change to write Debug Output to another Serialx device 
-#define DebugMonSerial Serial2
+//#define DebugMonSerial Serial2
 
 #ifdef DebugMonSerial
 // Uncomment the #define below to enable printing of RS485 Bytes Debug output to the DebugMonSerial device
 //#define DEBUG_RS485_BYTES
 
 // Uncomment the line below to enable Debug output of the JMRI commands Changes
-#define DEBUG_JMRI_INPUT
+//#define DEBUG_JMRI_INPUT
 
 // Uncomment the #define below to enable printing of NceCabBus Library Debug output to the DebugMonSerial device
-#define DEBUG_LIBRARY
+//#define DEBUG_LIBRARY
 
 #if defined(DEBUG_RS485_BYTES) || defined(DEBUG_JMRI_INPUT) || defined(DEBUG_LIBRARY) || defined(DebugMonSerial)
 #define ENABLE_DEBUG_SERIAL
 #endif
 #endif
 
-
 // Create Cab Bus Object
 NceCabBus cabBus;
 
 void sendUSBBytes(uint8_t *values, uint8_t length)
 {
+  // Seem to need a short delay when there are a number of request eg editing a macro
+  delayMicroseconds(150);
+    
     JMRISerial.write(values,length);
     JMRISerial.flush();
 
@@ -146,12 +148,18 @@ void setup() {
 }
 
 void loop() {
+
+  
+  uint8_t packetBuffer[7];
+  
+
   
  // Read the incoming bytes on the RS485 cabbus network and processByte
  if(RS485Serial.available())
   {
     uint8_t rxByte = RS485Serial.read();
-    cabBus.processByte(rxByte); 
+    cabBus.processByte(rxByte);
+    cabBus.processResponseByte(rxByte); 
    
 
 #ifdef DEBUG_RS485_BYTES  
@@ -165,7 +173,7 @@ void loop() {
     DebugMonSerial.print(rxByte, HEX);
     DebugMonSerial.println(' ');
 #endif
-
+    
     }    
    
     

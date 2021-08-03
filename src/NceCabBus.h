@@ -107,6 +107,7 @@ class NceCabBus
     
     void processByte(uint8_t inByte);
     void processUSBByte(uint8_t inByte);
+    void processResponseByte(uint8_t inByte);
     
     void setRS485SendBytesHandler(RS485SendBytes funcPtr);
     void setUSBSendBytesHandler(USBSendBytes funcPtr);

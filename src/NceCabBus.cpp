@@ -21,63 +21,73 @@ typedef struct
 	uint8_t data[MAX_USB_COMMAND_LENGTH];
 } USBResponse;
 
+#define CAB_BUS_REPLY_LENGTH	7
+typedef struct
+{
+	uint8_t count;
+	uint8_t ReplySize;
+	bool Receive_Reply;
+	uint8_t data[CAB_BUS_REPLY_LENGTH];
+} CabBusCommandReply;
+
 USBCommand USBCommandBuffer;
 USBResponse USBResponseBuffer;
 CabBusCommand CabBusCommandBuffer;
 CabBusCommand CabBusCommandBuffer1;
+CabBusCommandReply CabBusReplyBuffer;
 
 const uint8_t USBCommandLengths[] = {
 	1, // 0x80
-	0, // 0x81
-	0, // 0x82
-	0, // 0x83
-	0, // 0x84
-	0, // 0x85
-	0, // 0x86
-	0, // 0x87
-	0, // 0x88
-	0, // 0x89
-	0, // 0x8A
-	0, // 0x8B
+	1, // 0x81
+	1, // 0x82
+	1, // 0x83
+	1, // 0x84
+	1, // 0x85
+	1, // 0x86
+	1, // 0x87
+	1, // 0x88
+	1, // 0x89
+	1, // 0x8A
+	1, // 0x8B
 	1, // 0x8C
-	0, // 0x8D
-	0, // 0x8E
-	0, // 0x8F
-	0, // 0x90
-	0, // 0x91
-	0, // 0x92
-	0, // 0x93
-	0, // 0x94
-	0, // 0x95
-	0, // 0x96
-	0, // 0x97
-	0, // 0x98
-	0, // 0x99
-	0, // 0x9A
+	1, // 0x8D
+	1, // 0x8E
+	1, // 0x8F
+	1, // 0x90
+	1, // 0x91
+	1, // 0x92
+	1, // 0x93
+	1, // 0x94
+	1, // 0x95
+	1, // 0x96
+	1, // 0x97
+	1, // 0x98
+	1, // 0x99
+	1, // 0x9A
 	2, // 0x9B
 	2, // 0x9C
-	0, // 0x9D
+	1, // 0x9D
 	1, // 0x9E 
 	1, // 0x9F
 	4, // 0xA0
 	3, // 0xA1
 	5, // 0xA2
-	0, // 0xA3
-	0, // 0xA4
-	0, // 0xA5
+	1, // 0xA3
+	1, // 0xA4
+	1, // 0xA5
 	3, // 0xA6
 	2, // 0xA7
 	4, // 0xA8
 	3, // 0xA9
 	1, // 0xAA
-	0, // 0xAB
-	0, // 0xAC
+	1, // 0xAB
+	1, // 0xAC
 	5, // 0xAD
 	6, // 0xAE
 	6, // 0xAF
 	5, // 0xB0
-	0, // 0xB1
-	0, // 0xB2
+	1, // 0xB1
+	1, // 0xB2
 	3, // 0xB3
 	2, // 0xB4
 	2  // 0xB5
@@ -163,7 +173,7 @@ void NceCabBus::processUSBByte(uint8_t inByte)
 		{
 		case 0x80:	// NOP, dummy instruction Returns !
 		{
-			USBResponseBuffer.data[0] = '!';
+			USBResponseBuffer.data[0] = (USB_COMMAND_COMPLETED_SUCCESSFULLY);
 			USBResponseBuffer.count = 1;
 			if (func_USBSendBytes)
 			{
@@ -175,7 +185,7 @@ void NceCabBus::processUSBByte(uint8_t inByte)
 
 		case 0x8C:	// NOP, dummy instruction Returns ! followed by CR/LF
 		{
-			USBResponseBuffer.data[0] = '!';
+			USBResponseBuffer.data[0] = (USB_COMMAND_COMPLETED_SUCCESSFULLY);
 			USBResponseBuffer.data[1] = '\r';
 			USBResponseBuffer.data[2] = '\n';
 			USBResponseBuffer.count = 3;
@@ -190,10 +200,12 @@ void NceCabBus::processUSBByte(uint8_t inByte)
 		case 0x9B: // 0x9B yy Return Status of AIU yy
 		{
 			if ((USBCommandBuffer.data[1] > 7) || (USBCommandBuffer.data[1] < 11)) //For Power Cab can only use addresses 8-10 Expand if required
+				/*
 			{
 				sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
 				return;
 			}
+			*/
 			CabBusCommandBuffer.data[0] = 0x4E;
 			CabBusCommandBuffer.data[1] = 0x19;
 			CabBusCommandBuffer.data[2] = 0x03;
@@ -207,16 +219,19 @@ void NceCabBus::processUSBByte(uint8_t inByte)
 		case 0x9C: // 0x9C xx Execute Macro number xx
 		{
 			if (USBCommandBuffer.data[1] > 255)
+			/*
 			{
 				sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
 				return;
 			}
+			*/
 			CabBusCommandBuffer.data[0] = 0x50;
 			CabBusCommandBuffer.data[1] = 0x00;
 			CabBusCommandBuffer.data[2] = 0x01;
 			CabBusCommandBuffer.data[3] = USBCommandBuffer.data[1];
 			CabBusCommandBuffer.data[4] = calcChecksum(CabBusCommandBuffer.data, 4);
 			CabBusCommandBuffer.count = 5;
+			sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
 			break;
 		}
 
@@ -224,30 +239,20 @@ void NceCabBus::processUSBByte(uint8_t inByte)
 		case 0x9E:	// Enter programming Track mode
 		{			
 						
-			if (USBCommandBuffer.data[0] != 0x9E)
-			{
-				sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
-				return;
-			}
-
 			CabBusCommandBuffer.data[0] = 0x4E;
 			CabBusCommandBuffer.data[1] = 0x1B;
 			CabBusCommandBuffer.data[2] = 0x00;
 			CabBusCommandBuffer.data[3] = 0x00;
 			CabBusCommandBuffer.data[4] = calcChecksum(CabBusCommandBuffer.data, 4);
 			CabBusCommandBuffer.count = 5;
+			sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
 			break;
+
 		}
 
 
 		case 0x9F:	// Exit programming Track mode
 		{
-			
-			if (USBCommandBuffer.data[0] != 0x9F)
-			{
-				sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
-				return;
-			}
 			
 			CabBusCommandBuffer.data[0] = 0x4E;
 			CabBusCommandBuffer.data[1] = 0x1A;
@@ -255,6 +260,7 @@ void NceCabBus::processUSBByte(uint8_t inByte)
 			CabBusCommandBuffer.data[3] = 0x00;
 			CabBusCommandBuffer.data[4] = calcChecksum(CabBusCommandBuffer.data, 4);
 			CabBusCommandBuffer.count = 5;
+			sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
 			break;
 		}
 
@@ -263,30 +269,19 @@ void NceCabBus::processUSBByte(uint8_t inByte)
 			uint16_t CVaddress = 0x0FFF & ((USBCommandBuffer.data[1] << 8) + USBCommandBuffer.data[2]);
 			uint16_t datavalue = USBCommandBuffer.data[3];
 
-			if (USBCommandBuffer.data[0] != 0xA0)
-			{
-				sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
-				return;
-			}
-
 			CabBusCommandBuffer.data[0] = 0x4E;
 			CabBusCommandBuffer.data[1] = 0x40 + (CVaddress >> 6);
 			CabBusCommandBuffer.data[2] = (0x007F & (CVaddress << 1)) + (datavalue >> 7);
 			CabBusCommandBuffer.data[3] = 0x007F & datavalue;
 			CabBusCommandBuffer.data[4] = calcChecksum(CabBusCommandBuffer.data, 4);
 			CabBusCommandBuffer.count = 5;
+			sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
 			break;
 		}
 
 		case 0xA1:	// 0xA1 aaaa Read CV aaaa in paged mode  
 		{
 			uint16_t CVaddress = 0x0FFF & ((USBCommandBuffer.data[1] << 8) + USBCommandBuffer.data[2]);
-
-			if (USBCommandBuffer.data[0] != 0xA1)
-			{
-				sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
-				return;
-			}
 
 			CabBusCommandBuffer.data[0] = 0x4E;
 			CabBusCommandBuffer.data[1] = 0x20 + (CVaddress >> 6);
@@ -303,7 +298,7 @@ void NceCabBus::processUSBByte(uint8_t inByte)
 			uint16_t address = 0x0FFF & ((USBCommandBuffer.data[1] << 8) + USBCommandBuffer.data[2]);
 			if (address > 9999)
 			{
-				sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
+				sendUSBResponse(USB_ADDRESS_OUT_OF_RANGE);
 				return;
 			}
 			if (address > 127)
@@ -319,6 +314,7 @@ void NceCabBus::processUSBByte(uint8_t inByte)
 			CabBusCommandBuffer.data[3] = USBCommandBuffer.data[4];					//data_1
 			CabBusCommandBuffer.data[4] = calcChecksum(CabBusCommandBuffer.data, 4);
 			CabBusCommandBuffer.count = 5;
+			sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
 			break;
 		}
 
@@ -327,34 +323,35 @@ void NceCabBus::processUSBByte(uint8_t inByte)
 
 			uint16_t datavalue = USBCommandBuffer.data[2];
 
-
+			/*
 			if (USBCommandBuffer.data[0] != 0xA6)
 			{
 				sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
 				return;
 			}
-
+			*/
 			CabBusCommandBuffer.data[0] = 0x4E;
 			CabBusCommandBuffer.data[1] = 0x1F;
 			CabBusCommandBuffer.data[2] = (USBCommandBuffer.data[2] >> 1);
 			CabBusCommandBuffer.data[3] = 0x007F & datavalue;
 			CabBusCommandBuffer.data[4] = calcChecksum(CabBusCommandBuffer.data, 4);
 			CabBusCommandBuffer.count = 5;
+			sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
 			break;
 		}
 
-		case 0xA7:	// 0xA7 rr xx program register rr with data xx in register mode 
+		case 0xA7:	// 0xA7 rr xx read register rr with data xx in register mode 
 		{
 
 			uint16_t datavalue = USBCommandBuffer.data[2];
 
-
+			/*
 			if (USBCommandBuffer.data[0] != 0xA7)
 			{
 				sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
 				return;
 			}
-
+			*/
 			CabBusCommandBuffer.data[0] = 0x4E;
 			CabBusCommandBuffer.data[1] = 0x1E;
 			CabBusCommandBuffer.data[2] = (USBCommandBuffer.data[2] >> 1);
@@ -370,32 +367,33 @@ void NceCabBus::processUSBByte(uint8_t inByte)
 			uint16_t CVaddress = 0x0FFF & ((USBCommandBuffer.data[1] << 8) + USBCommandBuffer.data[2]);
 			uint16_t datavalue = USBCommandBuffer.data[3];
 
-
+			/*
 			if (USBCommandBuffer.data[0] != 0xA8)
 			{
 				sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
 				return;
 			}
-			
+			*/
 			CabBusCommandBuffer.data[0] = 0x4E; 
 			CabBusCommandBuffer.data[1] = 0x50 + (CVaddress >> 6);
 			CabBusCommandBuffer.data[2] = (0x007F & (CVaddress << 1)) + (datavalue >> 7);
 			CabBusCommandBuffer.data[3] = 0x007F & datavalue;
 			CabBusCommandBuffer.data[4] = calcChecksum(CabBusCommandBuffer.data, 4);
 			CabBusCommandBuffer.count = 5;
+			sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
 			break;
 		}
 
 		case 0xA9:	// 0xA9 aaaa Read CV aaaa in direct mode 
 		{
 			uint16_t CVaddress = 0x0FFF & ((USBCommandBuffer.data[1] << 8) + USBCommandBuffer.data[2]);
-			
+			/*
 			if (USBCommandBuffer.data[0] != 0xA9)
 			{
 				sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
 				return;
 			}
-
+			*/
 			CabBusCommandBuffer.data[0] = 0x4E;
 			CabBusCommandBuffer.data[1] = 0x30 + (CVaddress >> 6);
 			CabBusCommandBuffer.data[2] = (0x007F & (CVaddress << 1));
@@ -419,13 +417,12 @@ void NceCabBus::processUSBByte(uint8_t inByte)
 			break;
 		}
 
-
 		case 0xAD: // Accy/Signal and macro commands  0xAD <addr_h> <addr_l> <op_1> <data_1>
 		{
 			uint16_t address = 0x0FFF & ((USBCommandBuffer.data[1] << 8) + USBCommandBuffer.data[2]);
 			if (address > 2044)
 			{
-				sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
+				sendUSBResponse(USB_ADDRESS_OUT_OF_RANGE);
 				return;
 			}
 			CabBusCommandBuffer.data[0] = 0x0050 + (address >> 7);					// addr_h 
@@ -434,6 +431,7 @@ void NceCabBus::processUSBByte(uint8_t inByte)
 			CabBusCommandBuffer.data[3] = USBCommandBuffer.data[4];					//data_1
 			CabBusCommandBuffer.data[4] = calcChecksum(CabBusCommandBuffer.data, 4);
 			CabBusCommandBuffer.count = 5;
+			sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
 			break;
 		}
 
@@ -443,25 +441,28 @@ void NceCabBus::processUSBByte(uint8_t inByte)
 			uint16_t address = 0x0FFF & ((USBCommandBuffer.data[1] << 8) + USBCommandBuffer.data[2]);
 			uint16_t CVaddress = 0x0FFF & ((USBCommandBuffer.data[3] << 8) + USBCommandBuffer.data[4]);
 			uint16_t datavalue = USBCommandBuffer.data[5];
-
+			/*
 			if (address > 9999)
 			{
-				sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
+				sendUSBResponse(USB_ADDRESS_OUT_OF_RANGE);
 				return;
 			}
+			*/
 			CabBusCommandBuffer.data[0] = 0x00FF & (address >> 7);	// addr_h 
 			CabBusCommandBuffer.data[1] = 0x007F & address;			// addr_l
 			CabBusCommandBuffer.data[2] = 0x00;
 			CabBusCommandBuffer.data[3] = 0x00;
 			CabBusCommandBuffer.data[4] = calcChecksum(CabBusCommandBuffer.data, 4);
 			CabBusCommandBuffer.count = 5;
-						
+			//sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
+
 			CabBusCommandBuffer1.data[0] = 0x4E;
 			CabBusCommandBuffer1.data[1] = 0x60 + (CVaddress >> 6);
 			CabBusCommandBuffer1.data[2] = (0x007F & (CVaddress << 1)) + (datavalue >> 7);
 			CabBusCommandBuffer1.data[3] = 0x007F & datavalue;
 			CabBusCommandBuffer1.data[4] = calcChecksum(CabBusCommandBuffer1.data, 4);
 			CabBusCommandBuffer1.count = 5;
+			//sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
 			break;
 		}
 
@@ -470,25 +471,27 @@ void NceCabBus::processUSBByte(uint8_t inByte)
 			uint16_t address = 0x0FFF & ((USBCommandBuffer.data[1] << 8) + USBCommandBuffer.data[2]);
 			uint16_t CVaddress = 0x0FFF & ((USBCommandBuffer.data[3] << 8) + USBCommandBuffer.data[4]);
 			uint16_t datavalue = USBCommandBuffer.data[5];
-
+			/*
 			if (address > 2044)
 			{
-				sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
+				sendUSBResponse(USB_ADDRESS_OUT_OF_RANGE);
 				return;
 			}
+			*/
 			CabBusCommandBuffer.data[0] = 0x00FF & (address >> 7);	// addr_h 
 			CabBusCommandBuffer.data[1] = 0x007F & address;			// addr_l
 			CabBusCommandBuffer.data[2] = 0x00;
 			CabBusCommandBuffer.data[3] = 0x00;
 			CabBusCommandBuffer.data[4] = calcChecksum(CabBusCommandBuffer.data, 4);
 			CabBusCommandBuffer.count = 5;
-			
+			sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
 			CabBusCommandBuffer1.data[0] = 0x4E;
 			CabBusCommandBuffer1.data[1] = 0x70 + (CVaddress >> 6);
 			CabBusCommandBuffer1.data[2] = (0x007F & (CVaddress << 1)) + (datavalue >> 7);
 			CabBusCommandBuffer1.data[3] = 0x07F & datavalue;
 			CabBusCommandBuffer1.data[4] = calcChecksum(CabBusCommandBuffer1.data, 4);
 			CabBusCommandBuffer1.count = 5;
+			sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
 			break;
 		}
 
@@ -498,19 +501,22 @@ void NceCabBus::processUSBByte(uint8_t inByte)
 			
 			uint16_t memaddress = (USBCommandBuffer.data[1]);
 
-			//if (((USBCommandBuffer.data[1] >=0) && (USBCommandBuffer.data[1] <= 255)) && ((USBCommandBuffer.data[2] >= 0) && (USBCommandBuffer.data[2] <= 63)))
+			
+		//if (((USBCommandBuffer.data[1] >=0) && (USBCommandBuffer.data[1] <= 255)) && ((USBCommandBuffer.data[2] >= 0) && (USBCommandBuffer.data[2] <= 63)))
+			/*
 			if (USBCommandBuffer.data[0] != 0xB3)
 			{
 				sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
 				return;
 			}
-
+			*/
 			CabBusCommandBuffer.data[0] = 0x4E;
 			CabBusCommandBuffer.data[1] = 0x18;
 			CabBusCommandBuffer.data[2] = (memaddress << 1) + (USBCommandBuffer.data[2] >> 7);
 			CabBusCommandBuffer.data[3] = 0x07F & USBCommandBuffer.data[2];
 			CabBusCommandBuffer.data[4] = calcChecksum(CabBusCommandBuffer.data, 4);
 			CabBusCommandBuffer.count = 5;
+			sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
 			break;
 		}
 
@@ -519,38 +525,46 @@ void NceCabBus::processUSBByte(uint8_t inByte)
 		{
 
 			uint16_t datavalue = (USBCommandBuffer.data[1]);
-
+			/*
 			if (USBCommandBuffer.data[0] != 0xB4)
 			{
 				sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
 				return;
 			}
-
+			*/
 			CabBusCommandBuffer.data[0] = 0x4E;
 			CabBusCommandBuffer.data[1] = 0x19;
 			CabBusCommandBuffer.data[2] = 0x00 + (datavalue >> 7);
 			CabBusCommandBuffer.data[3] = 0x07F & (datavalue);
 			CabBusCommandBuffer.data[4] = calcChecksum(CabBusCommandBuffer.data, 4);
 			CabBusCommandBuffer.count = 5;
+			sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
 			break;
 		}
 
 		case 0xB5: // 0xB5 xx return 1,2,4  bytes (indicated by xx = 1,2, or 4) from cab memory at memory pointer location the pointer will increment after the read
 
 		{
-
+			/*
 			if (USBCommandBuffer.data[0] != 0xB5)
 			{
 				sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
 				return;
 			}
-
+			*/
 			CabBusCommandBuffer.data[0] = 0x4E;
 			CabBusCommandBuffer.data[1] = 0x19;
 			CabBusCommandBuffer.data[2] = 0x02;
 			CabBusCommandBuffer.data[3] = USBCommandBuffer.data[1];
 			CabBusCommandBuffer.data[4] = calcChecksum(CabBusCommandBuffer.data, 4);
 			CabBusCommandBuffer.count = 5;
+			break;
+		}
+
+		default:	// Function Not Supported added to prevent code locking up
+		{
+
+			sendUSBResponse(USB_COMMAND_NOT_SUPPORTED);
 			break;
 		}
 		}
@@ -772,8 +786,11 @@ void NceCabBus::processByte(uint8_t inByte)
 
 					CabBusCommandBuffer.count = 0;
 
-
-					sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
+					if ((USBCommandBuffer.data[0] == 0xAE) || (USBCommandBuffer.data[0] == 0xAF))
+					{
+						sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
+					}
+					
 
 				}
 
@@ -797,8 +814,10 @@ void NceCabBus::processByte(uint8_t inByte)
 
 					CabBusCommandBuffer1.count = 0;
 
-
-					sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
+					if ((USBCommandBuffer.data[0] == 0xAE) || (USBCommandBuffer.data[0] == 0xAF))
+					{
+						sendUSBResponse(USB_COMMAND_COMPLETED_SUCCESSFULLY);
+					}
 
 				}
 
@@ -953,6 +972,204 @@ void NceCabBus::processByte(uint8_t inByte)
 		}
 	}
 }
+
+void NceCabBus::processResponseByte(uint8_t inByte)
+{
+	if ((inByte == 0xD8) || (inByte == 0xD9) || (inByte == 0xDA))
+	{
+		CabBusReplyBuffer.count = 0;
+		CabBusReplyBuffer.Receive_Reply = true;
+		CabBusReplyBuffer.ReplySize;
+
+		switch (inByte)
+		{
+			case 0xD8:
+			{
+				CabBusReplyBuffer.ReplySize = 3;
+			break;
+			}
+			case 0xD9:
+			{
+				CabBusReplyBuffer.ReplySize = 4;
+			break;
+			}
+			case 0xDA:
+			{
+				CabBusReplyBuffer.ReplySize = 7;
+			break;
+			}
+		}
+	}
+
+		if (CabBusReplyBuffer.Receive_Reply == true) //Store the Reply
+		{
+			CabBusReplyBuffer.data[CabBusReplyBuffer.count] = inByte;
+			
+		if (pLogger)
+		{
+			pLogger->print("\nReply Buffer Size: ");
+			pLogger->println(CabBusReplyBuffer.ReplySize);
+			pLogger->print("Active State: ");
+			pLogger->println(CabBusReplyBuffer.Receive_Reply);
+			pLogger->print("Byte Count: ");
+			pLogger->println(CabBusReplyBuffer.count);
+			pLogger->print("T:");
+			pLogger->println();
+			pLogger->println();
+		}
+		
+		CabBusReplyBuffer.count++;
+		}
+	
+
+	if (CabBusReplyBuffer.ReplySize > 0)
+	{
+		if (CabBusReplyBuffer.count == CabBusReplyBuffer.ReplySize)
+		{
+
+			CabBusReplyBuffer.count = 0;
+			CabBusReplyBuffer.ReplySize = 0;
+			CabBusReplyBuffer.Receive_Reply = false;
+			if (pLogger)
+			{
+				pLogger->print("Active State: ");
+				pLogger->println(CabBusReplyBuffer.Receive_Reply);
+			}
+
+
+			switch (CabBusReplyBuffer.data[0])
+			{
+			case 0xD8:
+			{
+				USBResponseBuffer.data[0] = ((CabBusReplyBuffer.data[1] & 0x03) << 6) + (CabBusReplyBuffer.data[2] & 0x3F);
+
+				switch ((CabBusReplyBuffer.data[1] & 0x30))
+				{
+				case 0x00:
+					{
+						USBResponseBuffer.data[1] = (USB_COMMAND_COMPLETED_SUCCESSFULLY);
+						break;
+					}
+					case 0x01:
+					{
+						USBResponseBuffer.data[1] = (USB_ADDRESS_OUT_OF_RANGE);
+						break;
+					}
+					case 0x02:
+					{
+						USBResponseBuffer.data[1] = (USB_CAB_ADDRESS_OR_OPCODE_OUT_OF_RANGE);
+						break;
+					}
+					case 0x03:
+					{
+						USBResponseBuffer.data[1] = (USB_CV_ADDRESS_OR_DATA_OUT_OF_RANGE);
+						break;
+					}
+					case 0x04:
+					{
+						USBResponseBuffer.data[1] = (USB_BYTE_COUNT_OUT_OF_RANGE);
+						break;
+					}
+
+				}
+				USBResponseBuffer.count = 2;
+				break;
+			}
+			case 0xD9:
+			{
+				USBResponseBuffer.data[0] = ((CabBusReplyBuffer.data[1] & 0x0F) << 4) + (CabBusReplyBuffer.data[2] & 0x0F);
+				USBResponseBuffer.data[1] = ((CabBusReplyBuffer.data[2] & 0x30) << 2) + (CabBusReplyBuffer.data[3] & 0x3F);
+
+				switch ((CabBusReplyBuffer.data[1] & 0x30))
+				{
+					case 0x00:
+					{
+						USBResponseBuffer.data[2] = (USB_COMMAND_COMPLETED_SUCCESSFULLY);
+						break;
+					}
+					case 0x01:
+					{
+						USBResponseBuffer.data[2] = (USB_ADDRESS_OUT_OF_RANGE);
+						break;
+					}
+					case 0x02:
+					{
+						USBResponseBuffer.data[2] = (USB_CAB_ADDRESS_OR_OPCODE_OUT_OF_RANGE);
+						break;
+					}
+					case 0x03:
+					{
+						USBResponseBuffer.data[2] = (USB_CV_ADDRESS_OR_DATA_OUT_OF_RANGE);
+						break;
+					}
+					case 0x04:
+					{
+						USBResponseBuffer.data[2] = (USB_BYTE_COUNT_OUT_OF_RANGE);
+						break;
+					}
+
+				}
+					USBResponseBuffer.count = 3;
+				break;
+			}
+			case 0xDA:
+			{
+				USBResponseBuffer.data[0] = ((CabBusReplyBuffer.data[1] & 0x0F) << 4) + (CabBusReplyBuffer.data[2] & 0x0F);
+				USBResponseBuffer.data[1] = ((CabBusReplyBuffer.data[2] & 0x30) << 2) + (CabBusReplyBuffer.data[3] & 0x3F);
+				USBResponseBuffer.data[2] = ((CabBusReplyBuffer.data[4] & 0x0F) << 4) + (CabBusReplyBuffer.data[5] & 0x0F);
+				USBResponseBuffer.data[3] = ((CabBusReplyBuffer.data[5] & 0x30) << 2) + (CabBusReplyBuffer.data[6] & 0x3F);
+				
+
+				switch ((CabBusReplyBuffer.data[1] & 0x30))
+				{
+					case 0x00:
+					{
+						USBResponseBuffer.data[4] = (USB_COMMAND_COMPLETED_SUCCESSFULLY);
+						break;
+					}
+					case 0x01:
+					{
+						USBResponseBuffer.data[4] = (USB_ADDRESS_OUT_OF_RANGE);
+						break;
+					}
+					case 0x02:
+					{
+						USBResponseBuffer.data[4] = (USB_CAB_ADDRESS_OR_OPCODE_OUT_OF_RANGE);
+						break;
+					}
+					case 0x03:
+					{
+						USBResponseBuffer.data[4] = (USB_CV_ADDRESS_OR_DATA_OUT_OF_RANGE);
+						break;
+					}
+					case 0x04:
+					{
+						USBResponseBuffer.data[4] = (USB_BYTE_COUNT_OUT_OF_RANGE);
+						break;
+					}
+
+				}
+				USBResponseBuffer.count = 5;
+				break;
+			}
+			}
+
+			if (func_USBSendBytes)
+			{
+				func_USBSendBytes(USBResponseBuffer.data, USBResponseBuffer.count);
+				USBResponseBuffer.count = 0;
+			}
+
+			
+		}
+
+	}
+
+
+	
+}
+
+
 void NceCabBus::sendUSBResponse(USB_RESPONSE_CODES response)
 {
 	if(func_USBSendBytes)
