@@ -27,6 +27,8 @@ getCabAddress							KEYWORD2
 setCabAddress							KEYWORD2
 getCabState								KEYWORD2
 processByte								KEYWORD2
+processResponseByte						KEYWORD2
+processUSBByte							KEYWORD2
 setRS485SendBytesHandler	KEYWORD2
 setUSBSendBytesHandler		KEYWORD2
 setLCDUpdateHandler				KEYWORD2
