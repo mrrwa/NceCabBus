@@ -14,7 +14,8 @@
 // author:    Alex Shepherd
 // webpage:   http://mrrwa.org/
 // history:   2019-04-28 Initial Version
-// history1:  2021-05-30 Paul Hardey added 5 byte send for smart device
+// history:   2021-05-30 Added functions under the smart device for usb interface
+//                       and added processResponseByte   
 //------------------------------------------------------------------------
 //
 // purpose:   Provide a simplified interface to the NCE Cab Bus

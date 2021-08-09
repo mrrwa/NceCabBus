@@ -18,11 +18,12 @@
 //              are wired together and connected to the Arduino Output Pin defined by RS485_TX_ENABLE_PIN
 //              PC running JMRI  
 //
-// notes:     This example was developed on an Arduino Pro Micro which has the AVR MEGA32U4 chip.
-//            It uses this native USB port for Serial Debug output which left the hardware UART 
-//            for RS485 comms.
-//            If you want to use the Debug options whilst connected to JMRI with the USB port
-//            you will need to use an Arduino Mega with extra serial ports
+// notes:     This example was developed on an Arduino Mega It uses the native USB port to 
+//            communicate to JMRI.
+//            A Second port was connected to Serial 2 pins 17 and 18 to allow debuging of the code
+//            using a serial monitor tool like Real term.
+//            It uses Serial 1 for the hardware UART for RS485 comms.
+//            The final project was tested on an Arduino Pro Micro which has the AVR MEGA32U4 chip.
 //
 // required libraries:
 //            NceCabBus which can be found at Alex Shepherd's web page http://mrrwa.org/ 
@@ -43,7 +44,7 @@
 #define RS485Serial Serial1
 
 // Change the line below to set the USB Cab Bus Address 
-#define CAB_BUS_ADDRESS     5
+#define CAB_BUS_ADDRESS     3
 
 // Uncomment the #define below to enable Debug Output and/or change to write Debug Output to another Serialx device 
 //#define DebugMonSerial Serial2
@@ -69,7 +70,7 @@ NceCabBus cabBus;
 void sendUSBBytes(uint8_t *values, uint8_t length)
 {
   // Seem to need a short delay when there are a number of request eg editing a macro
-  delayMicroseconds(150);
+  //delayMicroseconds(150);
     
     JMRISerial.write(values,length);
     JMRISerial.flush();
@@ -150,10 +151,6 @@ void setup() {
 void loop() {
 
   
-  uint8_t packetBuffer[7];
-  
-
-  
  // Read the incoming bytes on the RS485 cabbus network and processByte
  if(RS485Serial.available())
   {
@@ -184,7 +181,7 @@ void loop() {
     return;
 
  // Read the incoming bytes on the USB network and processByte
- 
+
   if(JMRISerial.available())
   {
     uint8_t jmriByte = JMRISerial.read();
