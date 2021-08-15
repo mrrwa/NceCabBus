@@ -1,7 +1,10 @@
 {
   "ExpandedNodes": [
     "",
+    "\\examples",
+    "\\examples\\USB-CabBus-Interface",
     "\\src"
   ],
+  "SelectedNode": "\\examples\\USB-CabBus-Interface\\USB-CabBus-Interface.ino",
   "PreviewInSolutionExplorer": false
 }

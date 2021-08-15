@@ -24,6 +24,7 @@
 //            using a serial monitor tool like Real term.
 //            It uses Serial 1 for the hardware UART for RS485 comms.
 //            The final project was tested on an Arduino Pro Micro which has the AVR MEGA32U4 chip.
+//            All function available with the PoweCab. examples have been created.  
 //
 // required libraries:
 //            NceCabBus which can be found at Alex Shepherd's web page http://mrrwa.org/ 
