@@ -14,7 +14,8 @@
 // author:    Alex Shepherd
 // webpage:   http://mrrwa.org/
 // history:   2019-04-28 Initial Version
-// history1:  2021-05-30 Paul Hardey added 5 byte send for smart device
+// history:   2021-05-30 Added functions under the smart device for usb interface
+//                       and added processResponseByte   
 //------------------------------------------------------------------------
 //
 // purpose:   Provide a simplified interface to the NCE Cab Bus
@@ -76,10 +77,10 @@ typedef enum
 {
 	USB_COMMAND_NOT_SUPPORTED = '0',
 	USB_ADDRESS_OUT_OF_RANGE = '1',
-	USB_CAB_ADDRESS OR_OPCODE_OUT_OF_RANGE = '2',
+	USB_CAB_ADDRESS_OR_OPCODE_OUT_OF_RANGE = '2',
 	USB_CV_ADDRESS_OR_DATA_OUT_OF_RANGE = '3',
-	USB_BYTE_COUNT_OUT_OF_RANGE = '4'
-	USB_COMMAND_COMPLETED_SUCCESSFULLY = '!'
+	USB_BYTE_COUNT_OUT_OF_RANGE = '4',
+	USB_COMMAND_COMPLETED_SUCCESSFULLY = '!',
 } USB_RESPONSE_CODES;
 
 typedef void (*RS485SendByte)(uint8_t value);
@@ -107,6 +108,7 @@ class NceCabBus
     
     void processByte(uint8_t inByte);
     void processUSBByte(uint8_t inByte);
+    void processResponseByte(uint8_t inByte);
     
     void setRS485SendBytesHandler(RS485SendBytes funcPtr);
     void setUSBSendBytesHandler(USBSendBytes funcPtr);
@@ -126,7 +128,7 @@ class NceCabBus
     void setSpeedKnob(uint8_t speed);
     uint8_t getSpeedKnob(void);
     void setKeyPress(uint8_t keyCode);
-	void setUSBCommand(uint8_t addr_h,uint8_t addr_l,uint8_t op_1,uint8_t data_1,uint8_t checksum);
+
 
   private:
   	CAB_TYPE	cabType;
@@ -134,7 +136,7 @@ class NceCabBus
   	uint8_t 	cabAddress;
   	
   	uint16_t	aiuState;
-  	
+	
   	uint8_t		FastClockHours;
   	uint8_t		FastClockMinutes;
   	uint8_t		FastClockRate; // As a Ratio of n:1
@@ -143,14 +145,6 @@ class NceCabBus
   	uint8_t		speedKnob; // Range 0-126, 127 = knob not used
   	uint8_t		keyCode; // Range 0-126, 127 = knob not used
 	
-	
-	uint8_t		_addr_h;		// Address high byte
-	uint8_t		_addr_l;		// Address low byte
-	uint8_t		_op_1;		// Operation code
-	uint8_t		_data_1;		// data for operation code
-	uint8_t		_checksum;	// xor checksum of previous 4 bytes
-	
-  	
   	uint8_t		cmdBufferIndex;
   	uint8_t		cmdBufferExpectedLength;
   	uint8_t		cmdBuffer[CMD_LEN_MAX];
@@ -158,7 +152,7 @@ class NceCabBus
   	void		send1ByteResponse(uint8_t byte0);
   	void		send2BytesResponse(uint8_t byte0, uint8_t byte1);
   	uint8_t		calcChecksum(uint8_t *Buffer, uint8_t Length);
-  	void		sendUSBResponse(USB_RESPONSE_CODES response);
+	void		sendUSBResponse(USB_RESPONSE_CODES response);
   	
   	RS485SendBytes				func_RS485SendBytes;
   	USBSendBytes				func_USBSendBytes;
