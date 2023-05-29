@@ -42,10 +42,10 @@
 
 #ifdef DebugMonSerial
 // Uncomment the #define below to enable printing of RS485 Bytes Debug output to the DebugMonSerial device
-#define DEBUG_RS485_BYTES
+//#define DEBUG_RS485_BYTES
 
 // Uncomment the #define below to enable printing of NceCabBus Library Debug output to the DebugMonSerial device
-#define DEBUG_LIBRARY
+//#define DEBUG_LIBRARY
 
 #if defined(DEBUG_RS485_BYTES) || defined(DEBUG_LIBRARY) || defined(DebugMonSerial)
 #define ENABLE_DEBUG_SERIAL

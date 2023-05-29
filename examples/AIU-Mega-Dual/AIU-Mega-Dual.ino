@@ -37,21 +37,21 @@
 #define RS485_TX_ENABLE_PIN 16
 
 // Change the #define below to set the AIU Cab Bus Address 
-#define CAB_BUS_ADDRESS_1			8
-#define CAB_BUS_ADDRESS_2     9
+#define CAB_BUS_ADDRESS_1	8
+#define CAB_BUS_ADDRESS_2   9
 
 // Uncomment the #define below to enable Debug Output and/or change to write Debug Output to another Serialx device 
-#define DebugMonSerial Serial
+// #define DebugMonSerial Serial
 
 #ifdef DebugMonSerial
 // Uncomment the #define below to enable printing of RS485 Bytes Debug output to the DebugMonSerial device
-#define DEBUG_RS485_BYTES
+// #define DEBUG_RS485_BYTES
 
 // Uncomment the line below to enable Debug output of the AIU Inputs Changes
-#define DEBUG_INPUT_CHANGES
+// #define DEBUG_INPUT_CHANGES
 
 // Uncomment the #define below to enable printing of NceCabBus Library Debug output to the DebugMonSerial device
-#define DEBUG_LIBRARY
+// #define DEBUG_LIBRARY
 
 #if defined(DEBUG_RS485_BYTES) || defined(DEBUG_INPUT_CHANGES) || defined(DEBUG_LIBRARY) || defined(DebugMonSerial)
 #define ENABLE_DEBUG_SERIAL
