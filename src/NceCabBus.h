@@ -14,7 +14,8 @@
 // author:    Alex Shepherd
 // webpage:   http://mrrwa.org/
 // history:   2019-04-28 Initial Version
-//
+// history:   2021-05-30 Added functions under the smart device for usb interface
+//                       and added processResponseByte   
 //------------------------------------------------------------------------
 //
 // purpose:   Provide a simplified interface to the NCE Cab Bus
@@ -72,10 +73,19 @@ typedef enum
 	DISPLAY_SHIFT_LEFT,
 } CURSOR_MODE;
 
-
+typedef enum
+{
+	USB_COMMAND_NOT_SUPPORTED = '0',
+	USB_ADDRESS_OUT_OF_RANGE = '1',
+	USB_CAB_ADDRESS_OR_OPCODE_OUT_OF_RANGE = '2',
+	USB_CV_ADDRESS_OR_DATA_OUT_OF_RANGE = '3',
+	USB_BYTE_COUNT_OUT_OF_RANGE = '4',
+	USB_COMMAND_COMPLETED_SUCCESSFULLY = '!',
+} USB_RESPONSE_CODES;
 
 typedef void (*RS485SendByte)(uint8_t value);
 typedef void (*RS485SendBytes)(uint8_t *values, uint8_t length);
+typedef void (*USBSendBytes)(uint8_t *values, uint8_t length);
 typedef void (*FastClockHandler)(uint8_t Hours, uint8_t Minutes, uint8_t Rate, FAST_CLOCK_MODE Mode);
 typedef void (*LCDUpdateHandler)(uint8_t Col, uint8_t Row, char *msg, uint8_t len);
 typedef void (*LCDMoveCursorHandler)(uint8_t Col, uint8_t Row);
@@ -97,8 +107,11 @@ class NceCabBus
     CAB_STATE getCabState();
     
     void processByte(uint8_t inByte);
+    void processUSBByte(uint8_t inByte);
+    void processResponseByte(uint8_t inByte);
     
     void setRS485SendBytesHandler(RS485SendBytes funcPtr);
+    void setUSBSendBytesHandler(USBSendBytes funcPtr);
     void setLCDUpdateHandler(LCDUpdateHandler funcPtr);
     void setLCDMoveCursorHandler(LCDMoveCursorHandler funcPtr);
     void setLCDCursorModeHandler(LCDCursorModeHandler funcPtr);
@@ -114,7 +127,8 @@ class NceCabBus
     
     void setSpeedKnob(uint8_t speed);
     uint8_t getSpeedKnob(void);
-    void setKeyPress(uint8_t keyCode); 
+    void setKeyPress(uint8_t keyCode);
+
 
   private:
   	CAB_TYPE	cabType;
@@ -122,7 +136,7 @@ class NceCabBus
   	uint8_t 	cabAddress;
   	
   	uint16_t	aiuState;
-  	
+	
   	uint8_t		FastClockHours;
   	uint8_t		FastClockMinutes;
   	uint8_t		FastClockRate; // As a Ratio of n:1
@@ -130,15 +144,18 @@ class NceCabBus
   	
   	uint8_t		speedKnob; // Range 0-126, 127 = knob not used
   	uint8_t		keyCode; // Range 0-126, 127 = knob not used
-  	
+	
   	uint8_t		cmdBufferIndex;
   	uint8_t		cmdBufferExpectedLength;
   	uint8_t		cmdBuffer[CMD_LEN_MAX];
   	
   	void		send1ByteResponse(uint8_t byte0);
   	void		send2BytesResponse(uint8_t byte0, uint8_t byte1);
+  	uint8_t		calcChecksum(uint8_t *Buffer, uint8_t Length);
+	void		sendUSBResponse(USB_RESPONSE_CODES response);
   	
   	RS485SendBytes				func_RS485SendBytes;
+  	USBSendBytes				func_USBSendBytes;
   	FastClockHandler 			func_FastClockHandler;
   	LCDUpdateHandler			func_LCDUpdateHandler;
   	LCDMoveCursorHandler 	func_LCDMoveCursorHandler;
