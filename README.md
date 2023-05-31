@@ -43,6 +43,9 @@ GND +--------------------------------------------------- Cab Bus Pin 2
                                                                    
 ```
 
+## USB Interface and Cab Bus Command Reference Excel Spreadsheet
+Paul Hardey has compiled and documented many helpful USB Interface and CabBus Commands and Responses into [an Excel Spreadsheet here](docs/Loco-Address-USB-Cab-Bus.xlsx)
+
 ## Example DIY Strip-board RS485 Transceiver
 These two pictures show how you can build your own RS485 interface with a bit of Strip-board and a RS485 chip to get started with interfacing to a NCE Cab Bus
 
