@@ -52,6 +52,13 @@
 #endif
 #endif
 
+// TCS CS-105 NCE CabBus compatibility workarounds
+// Uncomment the ONE of the following lines to enable TCS CS-105 FactClock Workarounds
+// You MUST have only one node compiled with TCS_FAST_CLOCK_PRIMARY which enables it to operate like a LCD Cab
+// You can have multiple additional nodes compiled with TCS_FAST_CLOCK_SECONDARY
+//#define TCS_FAST_CLOCK_PRIMARY
+//#define TCS_FAST_CLOCK_SECONDARY
+
 NceCabBus cabBus;
 
 void FastClockUpdate(uint8_t Hours, uint8_t Minutes, uint8_t Rate, FAST_CLOCK_MODE Mode)
@@ -86,6 +93,32 @@ void FastClockUpdate(uint8_t Hours, uint8_t Minutes, uint8_t Rate, FAST_CLOCK_MO
 	DebugMonSerial.println(":1");
 }
 
+#if defined(TCS_FAST_CLOCK_PRIMARY)
+void sendRS485Bytes(uint8_t *values, uint8_t length)
+{
+  // Seem to need a short delay to make sure the RS485 Master has disable Tx and is ready for our response
+  delayMicroseconds(200);
+  
+  digitalWrite(RS485_TX_ENABLE_PIN, HIGH);
+  RS485Serial.write(values, length);
+  RS485Serial.flush();
+  digitalWrite(RS485_TX_ENABLE_PIN, LOW);
+
+#ifdef DEBUG_RS485_BYTES  
+  DebugMonSerial.print("T:");
+  for(uint8_t i = 0; i < length; i++)
+  {
+    uint8_t value = values[i];
+    
+    if(value < 16)
+      DebugMonSerial.print('0');
+  
+    DebugMonSerial.print(value, HEX);
+    DebugMonSerial.print(' ');
+  }
+#endif
+}
+#endif
 
 void setup() {
   uint32_t startMillis = millis();
@@ -110,6 +143,13 @@ void setup() {
   RS485Serial.begin(9600, SERIAL_8N2);
 
   cabBus.setFastClockHandler(&FastClockUpdate);
+
+#if defined(TCS_FAST_CLOCK_PRIMARY) || defined(TCS_FAST_CLOCK_SECONDARY)
+  cabBus.setFastClockCabAddress(63);
+#endif
+#if defined(TCS_FAST_CLOCK_PRIMARY)
+  cabBus.setRS485SendBytesHandler(&sendRS485Bytes);
+#endif
 }
 
 void loop() {

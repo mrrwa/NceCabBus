@@ -103,6 +103,7 @@ class NceCabBus
 
     uint8_t getCabAddress(void);
     void setCabAddress(uint8_t addr);
+    void setFastClockCabAddress(uint8_t addr);    
     
     CAB_STATE getCabState();
     

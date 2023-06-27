@@ -659,6 +659,13 @@ void NceCabBus::setCabAddress(uint8_t addr)
 	cabAddress = addr;
 }
 
+void NceCabBus::setFastClockCabAddress(uint8_t addr)
+{
+	cabAddress = addr;
+	cabType = CAB_TYPE_LCD;
+	FastClockRate = 255;	// Set the Rate to Maximum to signal invalid Ratio to enable the call-back to still trigger. 
+}
+
 void NceCabBus::setSpeedKnob(uint8_t speed)
 {
 	if(speed <= 127)
@@ -834,8 +841,33 @@ void NceCabBus::processByte(uint8_t inByte)
 					send1ByteResponse(cabType);
 					break;
 
+
+				case FAST_CLOCK_RATE_BCAST:	// Broadcast Fast Clock Rate
+					if (FastClockRate != cmdBuffer[1])
+					{
+						FastClockRate = cmdBuffer[1];
+						if (func_FastClockHandler && (FastClockMode > FAST_CLOCK_NOT_SET) && (FastClockRate > 0))
+							func_FastClockHandler(FastClockHours, FastClockMinutes, FastClockRate, FastClockMode);
+					}
+					break;
+
+// 				case CMD_PR_1ST_RIGHT:  // Actually the same value as FAST_CLOCK_BCAST
+				case FAST_CLOCK_BCAST:	// Broadcast Fast Clock Time
+					FastClockHours = ((cmdBuffer[2] - '0') * 10) + (cmdBuffer[3] - '0');
+					FastClockMinutes = ((cmdBuffer[5] - '0') * 10) + (cmdBuffer[6] - '0');
+					if (cmdBuffer[7] == 'A')
+						FastClockMode = FAST_CLOCK_AM;
+					else if (cmdBuffer[7] == 'P')
+						FastClockMode = FAST_CLOCK_PM;
+					else
+						FastClockMode = FAST_CLOCK_24;
+
+ 					if (func_FastClockHandler && (FastClockMode > FAST_CLOCK_NOT_SET) && (FastClockRate > 0))
+						func_FastClockHandler(FastClockHours, FastClockMinutes, FastClockRate, FastClockMode);
+
+					// Let code fall-through to next case statements to continue
+					
 				case CMD_PR_1ST_LEFT:
-				case CMD_PR_1ST_RIGHT:
 				case CMD_PR_2ND_LEFT:
 				case CMD_PR_2ND_RIGHT:
 				case CMD_PR_3RD_LEFT:

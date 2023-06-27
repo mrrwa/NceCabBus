@@ -20,11 +20,12 @@ CURSOR_MODE								KEYWORD1
 # Methods and Functions (KEYWORD2)
 #######################################
 
-setLogger									KEYWORD2
+setLogger								KEYWORD2
 getCabType								KEYWORD2
 setCabType								KEYWORD2
 getCabAddress							KEYWORD2
 setCabAddress							KEYWORD2
+setFastClockCabAddress					KEYWORD2
 getCabState								KEYWORD2
 processByte								KEYWORD2
 processResponseByte						KEYWORD2
